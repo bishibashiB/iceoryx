@@ -34,6 +34,7 @@ TEST_FLAG="OFF"
 QACPP_JSON="OFF"
 RUN_TEST=false
 INTROSPECTION_FLAG="ON"
+COVERAGE_FLAG="OFF"
 DDS_GATEWAY_FLAG="OFF"
 
 while (( "$#" )); do
@@ -87,6 +88,11 @@ while (( "$#" )); do
         INTROSPECTION_FLAG="OFF"
         shift 1
         ;;
+    "coverage")
+        COVERAGE_FLAG="ON"
+        TEST_FLAG="ON"
+        shift 1
+        ;;
     "help")
         echo "Build script for iceoryx."
         echo "By default, iceoryx, the dds gateway and the examples are built."
@@ -106,6 +112,7 @@ while (( "$#" )); do
         echo "    with-dds-gateway      Builds the iceoryx dds gateway"
         echo "    build-test            Builds the tests (doesn't run)"
         echo "    skip-introspection    Skips building iceoryx introspection"
+        echo "    coverage              generate and push test coverage infos"
         echo "    help                  Prints this help"
         echo ""
         echo "e.g. iceoryx_build_test.sh -b ./build-scripted clean test release"
@@ -150,7 +157,7 @@ cd $BUILD_DIR
 echo " [i] Current working directory: $(pwd)"
 
 echo ">>>>>> Start building iceoryx package <<<<<<"
-cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_STRICT=$STRICT_FLAG -DCMAKE_INSTALL_PREFIX=$ICEORYX_INSTALL_PREFIX -DCMAKE_EXPORT_COMPILE_COMMANDS=$QACPP_JSON -DTOML_CONFIG=on -Dtest=$TEST_FLAG -Droudi_environment=on -Dexamples=OFF -Dintrospection=$INTROSPECTION_FLAG -Ddds_gateway=$DDS_GATEWAY_FLAG $WORKSPACE/iceoryx_meta
+cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_STRICT=$STRICT_FLAG -DCMAKE_INSTALL_PREFIX=$ICEORYX_INSTALL_PREFIX -DCMAKE_EXPORT_COMPILE_COMMANDS=$QACPP_JSON -DTOML_CONFIG=on -Dtest=$TEST_FLAG -Droudi_environment=on -Dexamples=OFF -Dintrospection=$INTROSPECTION_FLAG -Ddds_gateway=$DDS_GATEWAY_FLAG $WORKSPACE/iceoryx_meta -Dcoverage=$COVERAGE_FLAG
 cmake --build . --target install -- -j$NUM_JOBS
 echo ">>>>>> Finished building iceoryx package <<<<<<"
 

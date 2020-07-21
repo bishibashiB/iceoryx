@@ -26,8 +26,13 @@ set(TEST_LINK_LIBS
 )
 
 if(LINUX)
+if(coverage)
+    set(TEST_LINK_LIBS ${TEST_LINK_LIBS} acl dl pthread rt -lgcov --coverage)
+    set(TEST_CXX_FLAGS PRIVATE ${ICEORYX_WARNINGS} -Wno-pedantic -Wno-conversion -fprofile-arcs -ftest-coverage)  # -Wpedantic results in errors at the time mocks
+else(coverage)
     set(TEST_LINK_LIBS ${TEST_LINK_LIBS} acl dl pthread rt)
     set(TEST_CXX_FLAGS PRIVATE ${ICEORYX_WARNINGS} -Wno-pedantic -Wno-conversion)  # -Wpedantic results in errors at the time mocks
+endif(coverage)
 elseif(QNX)
     set(TEST_CXX_FLAGS PRIVATE ${ICEORYX_WARNINGS} -Wno-pedantic -Wno-conversion)
 elseif(APPLE)
