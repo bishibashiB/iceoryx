@@ -48,6 +48,6 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
-          file: ./build/coverage.xml
+          # file: ./build/coverage.xml
           token: ed710fe8-1ffa-4683-9756-6319806183a2 # not required for public repos	
 
