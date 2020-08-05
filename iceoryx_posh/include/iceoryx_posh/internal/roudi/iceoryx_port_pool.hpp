@@ -28,8 +28,8 @@ class IceOryxPortPool : public PortPool
   public:
     IceOryxPortPool(PortPoolData& portPool) noexcept;
 
-    cxx::vector<SenderPortType::MemberType_t*, MAX_PORT_NUMBER> senderPortDataList() noexcept override;
-    cxx::vector<ReceiverPortType::MemberType_t*, MAX_PORT_NUMBER> receiverPortDataList() noexcept override;
+    cxx::list<SenderPortType::MemberType_t, MAX_PORT_NUMBER>& senderPortDataList() noexcept override;
+    cxx::list<ReceiverPortType::MemberType_t, MAX_PORT_NUMBER>& receiverPortDataList() noexcept override;
 
     cxx::expected<SenderPortType::MemberType_t*, PortPoolError>
     addSenderPort(const capro::ServiceDescription& serviceDescription,
@@ -42,8 +42,8 @@ class IceOryxPortPool : public PortPool
                     const std::string& applicationName,
                     const mepoo::MemoryInfo& memoryInfo = mepoo::MemoryInfo()) noexcept override;
 
-    void removeSenderPort(SenderPortType::MemberType_t* const portData) noexcept override;
-    void removeReceiverPort(ReceiverPortType::MemberType_t* const portData) noexcept override;
+    void removeSenderPort(const SenderPortType::MemberType_t& portData) noexcept override;
+    void removeReceiverPort(const ReceiverPortType::MemberType_t& portData) noexcept override;
 
   private:
     PortPoolData* m_portPoolData;

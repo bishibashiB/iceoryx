@@ -25,14 +25,14 @@ IceOryxPortPool::IceOryxPortPool(PortPoolData& portPoolData) noexcept
 {
 }
 
-cxx::vector<SenderPortType::MemberType_t*, MAX_PORT_NUMBER> IceOryxPortPool::senderPortDataList() noexcept
+cxx::list<SenderPortType::MemberType_t, MAX_PORT_NUMBER>& IceOryxPortPool::senderPortDataList() noexcept
 {
-    return m_portPoolData->m_senderPortMembers.content();
+    return m_portPoolData->m_senderPortMembers;
 }
 
-cxx::vector<ReceiverPortType::MemberType_t*, MAX_PORT_NUMBER> IceOryxPortPool::receiverPortDataList() noexcept
+cxx::list<ReceiverPortType::MemberType_t, MAX_PORT_NUMBER>& IceOryxPortPool::receiverPortDataList() noexcept
 {
-    return m_portPoolData->m_receiverPortMembers.content();
+    return m_portPoolData->m_receiverPortMembers;
 }
 
 cxx::expected<SenderPortType::MemberType_t*, PortPoolError>
@@ -41,10 +41,10 @@ IceOryxPortPool::addSenderPort(const capro::ServiceDescription& serviceDescripti
                                const std::string& applicationName,
                                const mepoo::MemoryInfo& memoryInfo) noexcept
 {
-    if (m_portPoolData->m_senderPortMembers.hasFreeSpace())
+    if (!m_portPoolData->m_senderPortMembers.full())
     {
-        auto senderPortData =
-            m_portPoolData->m_senderPortMembers.insert(serviceDescription, memoryManager, applicationName, memoryInfo);
+        auto senderPortData = &m_portPoolData->m_senderPortMembers.emplace_back(
+            serviceDescription, memoryManager, applicationName, memoryInfo);
         return cxx::success<SenderPortType::MemberType_t*>(senderPortData);
     }
     else
@@ -59,10 +59,10 @@ IceOryxPortPool::addReceiverPort(const capro::ServiceDescription& serviceDescrip
                                  const std::string& applicationName,
                                  const mepoo::MemoryInfo& memoryInfo) noexcept
 {
-    if (m_portPoolData->m_receiverPortMembers.hasFreeSpace())
+    if (!m_portPoolData->m_receiverPortMembers.full())
     {
         auto receiverPortData =
-            m_portPoolData->m_receiverPortMembers.insert(serviceDescription, applicationName, memoryInfo);
+            &m_portPoolData->m_receiverPortMembers.emplace_back(serviceDescription, applicationName, memoryInfo);
         return cxx::success<ReceiverPortType::MemberType_t*>(receiverPortData);
     }
     else
@@ -72,14 +72,16 @@ IceOryxPortPool::addReceiverPort(const capro::ServiceDescription& serviceDescrip
     }
 }
 
-void IceOryxPortPool::removeSenderPort(SenderPortType::MemberType_t* const portData) noexcept
+void IceOryxPortPool::removeSenderPort(const SenderPortType::MemberType_t& portData) noexcept
 {
-    m_portPoolData->m_senderPortMembers.erase(portData);
+    m_portPoolData->m_senderPortMembers.remove_if(
+        [&](SenderPortType::MemberType_t& port) { return &port == &portData; });
 }
 
-void IceOryxPortPool::removeReceiverPort(ReceiverPortType::MemberType_t* const portData) noexcept
+void IceOryxPortPool::removeReceiverPort(const ReceiverPortType::MemberType_t& portData) noexcept
 {
-    m_portPoolData->m_receiverPortMembers.erase(portData);
+    m_portPoolData->m_receiverPortMembers.remove_if(
+        [&](ReceiverPortType::MemberType_t& port) { return &port == &portData; });
 }
 
 } // namespace roudi

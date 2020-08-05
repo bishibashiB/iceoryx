@@ -18,6 +18,7 @@
 #include "iceoryx_posh/internal/popo/ports/application_port.hpp"
 #include "iceoryx_posh/internal/popo/ports/interface_port.hpp"
 #include "iceoryx_posh/internal/runtime/runnable_data.hpp"
+#include "iceoryx_utils/cxx/list.hpp"
 #include "iceoryx_utils/cxx/optional.hpp"
 #include "iceoryx_utils/cxx/vector.hpp"
 
@@ -47,9 +48,9 @@ class FixedPositionContainer
 
 struct PortPoolDataBase
 {
-    FixedPositionContainer<popo::InterfacePortData, MAX_INTERFACE_NUMBER> m_interfacePortMembers;
-    FixedPositionContainer<popo::ApplicationPortData, MAX_PROCESS_NUMBER> m_applicationPortMembers;
-    FixedPositionContainer<runtime::RunnableData, MAX_RUNNABLE_NUMBER> m_runnableMembers;
+    cxx::list<popo::InterfacePortData, MAX_INTERFACE_NUMBER> m_interfacePortMembers;
+    cxx::list<popo::ApplicationPortData, MAX_PROCESS_NUMBER> m_applicationPortMembers;
+    cxx::list<runtime::RunnableData, MAX_RUNNABLE_NUMBER> m_runnableMembers;
 
     // required to be atomic since a service can be offered or stopOffered while reading
     // this variable in a user application

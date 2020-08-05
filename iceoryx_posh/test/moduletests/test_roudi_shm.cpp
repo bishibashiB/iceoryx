@@ -37,8 +37,8 @@ using ::testing::Return;
 using iox::popo::ReceiverPort;
 using iox::popo::SenderPort;
 using iox::roudi::IceOryxRouDiMemoryManager;
-using iox::roudi::PortPoolError;
 using iox::roudi::PortManager;
+using iox::roudi::PortPoolError;
 
 class CShmMangerTester : public PortManager
 {
@@ -133,8 +133,8 @@ TEST_F(PortManager_test, doDiscovery_singleShotSenderFirst)
 
     m_shmManager->doDiscovery();
 
-    ASSERT_THAT(sender.getMembers()->m_receiverHandler.m_receiverVector.size(), Eq(1u));
-    auto it = sender.getMembers()->m_receiverHandler.m_receiverVector.begin();
+    ASSERT_THAT(sender.getMembers()->m_receiverHandler.m_receiverList.size(), Eq(1u));
+    auto it = sender.getMembers()->m_receiverHandler.m_receiverList.begin();
 
     // is the correct receiver in the receiver list
     EXPECT_THAT(iox::popo::ReceiverPort(*it).getMembers()->m_processName, Eq(receiver1.getMembers()->m_processName));
@@ -156,8 +156,8 @@ TEST_F(PortManager_test, doDiscovery_singleShotReceiverFirst)
 
     m_shmManager->doDiscovery();
 
-    ASSERT_THAT(sender.getMembers()->m_receiverHandler.m_receiverVector.size(), Eq(1u));
-    auto it = sender.getMembers()->m_receiverHandler.m_receiverVector.begin();
+    ASSERT_THAT(sender.getMembers()->m_receiverHandler.m_receiverList.size(), Eq(1u));
+    auto it = sender.getMembers()->m_receiverHandler.m_receiverList.begin();
 
     // is the correct receiver in the receiver list
     EXPECT_THAT(iox::popo::ReceiverPort(*it).getMembers()->m_processName, Eq(receiver1.getMembers()->m_processName));
@@ -179,8 +179,8 @@ TEST_F(PortManager_test, doDiscovery_singleShotReceiverFirstWithDiscovery)
 
     m_shmManager->doDiscovery();
 
-    ASSERT_THAT(sender.getMembers()->m_receiverHandler.m_receiverVector.size(), Eq(1u));
-    auto it = sender.getMembers()->m_receiverHandler.m_receiverVector.begin();
+    ASSERT_THAT(sender.getMembers()->m_receiverHandler.m_receiverList.size(), Eq(1u));
+    auto it = sender.getMembers()->m_receiverHandler.m_receiverList.begin();
 
     // is the correct receiver in the receiver list
     EXPECT_THAT(iox::popo::ReceiverPort(*it).getMembers()->m_processName, Eq(receiver1.getMembers()->m_processName));
@@ -206,12 +206,12 @@ TEST_F(PortManager_test, doDiscovery_rightOrdering)
     m_shmManager->doDiscovery();
 
     // check if all receivers are subscribed
-    ASSERT_THAT(sender.getMembers()->m_receiverHandler.m_receiverVector.size(), Eq(2u));
-    auto it = sender.getMembers()->m_receiverHandler.m_receiverVector.begin();
+    ASSERT_THAT(sender.getMembers()->m_receiverHandler.m_receiverList.size(), Eq(2u));
+    auto it = sender.getMembers()->m_receiverHandler.m_receiverList.begin();
 
     // check if the receivers are in the right order
     EXPECT_THAT(iox::popo::ReceiverPort(*it).getMembers()->m_processName, Eq(receiver1.getMembers()->m_processName));
-    it++;
+    ++it;
     EXPECT_THAT(iox::popo::ReceiverPort(*it).getMembers()->m_processName, Eq(receiver2.getMembers()->m_processName));
 
     // check if the receivers know that they are subscribed
@@ -340,10 +340,10 @@ TEST_F(PortManager_test, PortDestroy)
 
         m_shmManager->doDiscovery();
 
-        ASSERT_THAT(sender1.getMembers()->m_receiverHandler.m_receiverVector.size(), Eq(1u));
+        ASSERT_THAT(sender1.getMembers()->m_receiverHandler.m_receiverList.size(), Eq(1u));
         EXPECT_TRUE(receiver1.isSubscribed());
 
-        ASSERT_THAT(sender2.getMembers()->m_receiverHandler.m_receiverVector.size(), Eq(1u));
+        ASSERT_THAT(sender2.getMembers()->m_receiverHandler.m_receiverList.size(), Eq(1u));
         EXPECT_TRUE(receiver1.isSubscribed());
     }
 
@@ -363,7 +363,7 @@ TEST_F(PortManager_test, PortDestroy)
 
         m_shmManager->doDiscovery();
 
-        ASSERT_THAT(sender1.getMembers()->m_receiverHandler.m_receiverVector.size(), Eq(0u));
+        ASSERT_THAT(sender1.getMembers()->m_receiverHandler.m_receiverList.size(), Eq(0u));
         EXPECT_FALSE(receiver1.isSubscribed());
     }
 
@@ -387,10 +387,10 @@ TEST_F(PortManager_test, PortDestroy)
 
         m_shmManager->doDiscovery();
 
-        ASSERT_THAT(sender1.getMembers()->m_receiverHandler.m_receiverVector.size(), Eq(1u));
+        ASSERT_THAT(sender1.getMembers()->m_receiverHandler.m_receiverList.size(), Eq(1u));
         EXPECT_TRUE(receiver1.isSubscribed());
 
-        ASSERT_THAT(sender2.getMembers()->m_receiverHandler.m_receiverVector.size(), Eq(1u));
+        ASSERT_THAT(sender2.getMembers()->m_receiverHandler.m_receiverList.size(), Eq(1u));
         EXPECT_TRUE(receiver1.isSubscribed());
     }
 
@@ -402,7 +402,7 @@ TEST_F(PortManager_test, PortDestroy)
         ReceiverPort receiver1(receiverData1);
         ASSERT_TRUE(receiver1);
 
-        ASSERT_THAT(sender1.getMembers()->m_receiverHandler.m_receiverVector.size(), Eq(0u));
+        ASSERT_THAT(sender1.getMembers()->m_receiverHandler.m_receiverList.size(), Eq(0u));
         EXPECT_FALSE(receiver1.isSubscribed());
     }
 }

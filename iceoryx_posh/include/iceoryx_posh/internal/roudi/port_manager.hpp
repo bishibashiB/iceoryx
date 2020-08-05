@@ -79,9 +79,9 @@ class PortManager
 
     void deletePortsOfProcess(std::string processName);
 
-    void destroySenderPort(SenderPortType::MemberType_t* const senderPortData);
+    void destroySenderPort(SenderPortType::MemberType_t& senderPortData);
 
-    void destroyReceiverPort(ReceiverPortType::MemberType_t* const receiverPortData);
+    void destroyReceiverPort(ReceiverPortType::MemberType_t& receiverPortData);
 
     const std::atomic<uint64_t>* serviceRegistryChangeCounter();
     runtime::MqMessage findService(const capro::ServiceDescription& service);

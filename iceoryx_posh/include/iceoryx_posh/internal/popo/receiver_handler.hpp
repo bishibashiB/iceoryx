@@ -16,7 +16,7 @@
 
 #include "iceoryx_posh/internal/mepoo/shared_chunk.hpp"
 #include "iceoryx_posh/internal/popo/receiver_port.hpp"
-#include "iceoryx_utils/cxx/vector.hpp"
+#include "iceoryx_utils/cxx/list.hpp"
 #include "iceoryx_utils/error_handling/error_handling.hpp"
 #include "iceoryx_utils/internal/relocatable_pointer/relative_ptr.hpp"
 
@@ -53,7 +53,7 @@ class ReceiverHandler : public LockingPolicy
     using this_type = ReceiverHandler_t;
 
   public:
-    using ReceiverVector_t = cxx::vector<relative_ptr<ReceiverPortType::MemberType_t>, MaxReceivers>;
+    using ReceiverList_t = cxx::list<relative_ptr<ReceiverPortType::MemberType_t>, MaxReceivers>;
     class AppContext
     {
         friend ReceiverHandler_t;
@@ -64,7 +64,7 @@ class ReceiverHandler : public LockingPolicy
         void updateLastChunk(const mepoo::SharedChunk f_chunk);
         bool hasReceivers();
         void enableDoDeliverOnSubscription();
-        ReceiverVector_t& getReceiverList() noexcept;
+        ReceiverList_t& getReceiverList() noexcept;
 
       private:
         AppContext(ReceiverHandler_t& f_receiverHandler);
@@ -115,11 +115,11 @@ class ReceiverHandler : public LockingPolicy
     bool doesDeliverOnSubscribe() const;
     uint32_t getMaxDeliveryFiFoCapacity();
     /// Returns the list of receivers
-    ReceiverVector_t& getReceiverList() noexcept;
+    ReceiverList_t& getReceiverList() noexcept;
 
   private:
     std::atomic_bool m_doDeliverOnSubscription{false};
-    ReceiverVector_t m_receiverVector;
+    ReceiverList_t m_receiverList;
     mepoo::SharedChunk m_lastChunk{nullptr};
 };
 

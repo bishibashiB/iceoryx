@@ -266,9 +266,9 @@ void SenderPort::deliverChunkToAllReceiver(const mepoo::SharedChunk f_chunk)
 
     auto& receiverList = getMembers()->m_receiverHandler.appContext().getReceiverList();
 
-    for (int64_t i = static_cast<int64_t>(receiverList.size()) - 1; i >= 0; --i)
+    for (auto& receiver : receiverList)
     {
-        ReceiverPortType(receiverList[static_cast<uint64_t>(i)]).deliver(f_chunk);
+        ReceiverPortType(receiver).deliver(f_chunk);
     }
 
     getMembers()->m_receiverHandler.updateLastChunk(f_chunk);

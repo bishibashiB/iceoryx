@@ -56,7 +56,7 @@ inline void ReceiverHandler<MaxReceivers, LockingPolicy>::AppContext::enableDoDe
 }
 
 template <uint32_t MaxReceivers, typename LockingPolicy>
-inline typename ReceiverHandler<MaxReceivers, LockingPolicy>::ReceiverVector_t&
+inline typename ReceiverHandler<MaxReceivers, LockingPolicy>::ReceiverList_t&
 ReceiverHandler<MaxReceivers, LockingPolicy>::AppContext::getReceiverList() noexcept
 {
     return m_receiverHandler.getReceiverList();
@@ -110,7 +110,7 @@ template <uint32_t MaxReceivers, typename LockingPolicy>
 inline bool ReceiverHandler<MaxReceivers, LockingPolicy>::hasReceivers()
 {
     lockGuard_t lock(*this);
-    return !m_receiverVector.empty();
+    return !m_receiverList.empty();
 }
 
 template <uint32_t MaxReceivers, typename LockingPolicy>
@@ -119,16 +119,16 @@ ReceiverHandler<MaxReceivers, LockingPolicy>::addNewReceiver(ReceiverPortType::M
 {
     lockGuard_t lock(*this);
     auto l_alreadyKnownReceiver =
-        std::find_if(m_receiverVector.begin(), m_receiverVector.end(), [&](ReceiverPortType::MemberType_t* receiver) {
+        std::find_if(m_receiverList.begin(), m_receiverList.end(), [&](ReceiverPortType::MemberType_t* receiver) {
             return receiver == f_receiver;
         });
 
     // check if the receiver port is not yet subscribed
-    if (l_alreadyKnownReceiver == m_receiverVector.end())
+    if (l_alreadyKnownReceiver == m_receiverList.end())
     {
-        if (m_receiverVector.size() < m_receiverVector.capacity())
+        if (m_receiverList.size() < m_receiverList.capacity())
         {
-            m_receiverVector.push_back(f_receiver);
+            m_receiverList.push_back(f_receiver);
 
             if (m_doDeliverOnSubscription.load(std::memory_order_relaxed))
             {
@@ -158,10 +158,10 @@ inline void
 ReceiverHandler<MaxReceivers, LockingPolicy>::removeReceiver(ReceiverPortType::MemberType_t* const f_receiver)
 {
     lockGuard_t lock(*this);
-    auto l_iter = std::find(m_receiverVector.begin(), m_receiverVector.end(), f_receiver);
-    if (l_iter != m_receiverVector.end())
+    auto l_iter = std::find(m_receiverList.begin(), m_receiverList.end(), f_receiver);
+    if (l_iter != m_receiverList.end())
     {
-        m_receiverVector.erase(l_iter);
+        m_receiverList.erase(l_iter);
     }
 }
 
@@ -169,7 +169,7 @@ template <uint32_t MaxReceivers, typename LockingPolicy>
 inline void ReceiverHandler<MaxReceivers, LockingPolicy>::removeAll()
 {
     lockGuard_t lock(*this);
-    m_receiverVector.clear();
+    m_receiverList.clear();
 }
 
 template <uint32_t MaxReceivers, typename LockingPolicy>
@@ -185,10 +185,10 @@ inline bool ReceiverHandler<MaxReceivers, LockingPolicy>::doesDeliverOnSubscribe
 }
 
 template <uint32_t MaxReceivers, typename LockingPolicy>
-inline typename ReceiverHandler<MaxReceivers, LockingPolicy>::ReceiverVector_t&
+inline typename ReceiverHandler<MaxReceivers, LockingPolicy>::ReceiverList_t&
 ReceiverHandler<MaxReceivers, LockingPolicy>::getReceiverList() noexcept
 {
-    return m_receiverVector;
+    return m_receiverList;
 }
 
 template <uint32_t MaxReceivers, typename LockingPolicy>
@@ -198,7 +198,7 @@ inline uint32_t ReceiverHandler<MaxReceivers, LockingPolicy>::getMaxDeliveryFiFo
 
     uint64_t maxDeliveryFiFoCapacity = 0u;
 
-    for (auto receiver : m_receiverVector)
+    for (auto receiver : m_receiverList)
     {
         ReceiverPort port(receiver);
         auto deliveryFiFoCapacity = port.getDeliveryFiFoCapacity();

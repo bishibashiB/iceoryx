@@ -98,9 +98,10 @@ void PortManager::doDiscovery()
 void PortManager::handleSenderPorts()
 {
     // get the changes of sender port offer state
-    for (auto l_senderPortData : m_portPool->senderPortDataList())
+
+    for (auto& l_senderPortData : m_portPool->senderPortDataList())
     {
-        SenderPortType l_senderPort(l_senderPortData);
+        SenderPortType l_senderPort(&l_senderPortData);
         auto returnedCaproMessage = l_senderPort.getCaProMessage();
         if (returnedCaproMessage.has_value())
         {
@@ -142,9 +143,9 @@ void PortManager::handleSenderPorts()
 void PortManager::handleReceiverPorts()
 {
     // get requests for change of subscription state of receivers
-    for (auto l_receiverPortData : m_portPool->receiverPortDataList())
+    for (auto& l_receiverPortData : m_portPool->receiverPortDataList())
     {
-        ReceiverPortType l_receiverPort(l_receiverPortData);
+        ReceiverPortType l_receiverPort(&l_receiverPortData);
         auto returnedCaproMessage = l_receiverPort.getCaProMessage();
         if (returnedCaproMessage.has_value())
         {
@@ -171,21 +172,21 @@ void PortManager::handleReceiverPorts()
 void PortManager::handleInterfaces()
 {
     // check if there are new interfaces that must get an initial offer information
-    cxx::vector<popo::InterfacePortData*, MAX_INTERFACE_NUMBER> l_interfacePortsForInitialForwarding;
+    cxx::list<popo::InterfacePortData*, MAX_INTERFACE_NUMBER> l_interfacePortsForInitialForwarding;
 
 
-    for (auto l_interfacePortData : m_portPool->interfacePortDataList())
+    for (auto& l_interfacePortData : m_portPool->interfacePortDataList())
     {
-        if (l_interfacePortData->m_doInitialOfferForward)
+        if (l_interfacePortData.m_doInitialOfferForward)
         {
-            l_interfacePortsForInitialForwarding.push_back(l_interfacePortData);
-            l_interfacePortData->m_doInitialOfferForward = false;
+            l_interfacePortsForInitialForwarding.push_back(&l_interfacePortData);
+            l_interfacePortData.m_doInitialOfferForward = false;
         }
 
         // check if we have to destroy this interface port
-        if (l_interfacePortData->m_toBeDestroyed)
+        if (l_interfacePortData.m_toBeDestroyed)
         {
-            m_portPool->removeInterfacePort(l_interfacePortData);
+            m_portPool->removeInterfacePort(&l_interfacePortData);
             LogDebug() << "Destroyed InterfacePortData";
         }
     }
@@ -195,9 +196,9 @@ void PortManager::handleInterfaces()
         // provide offer information from all active sender ports to all new interfaces
         capro::CaproMessage l_caproMessage;
         l_caproMessage.m_type = capro::CaproMessageType::OFFER;
-        for (auto l_senderPortData : m_portPool->senderPortDataList())
+        for (auto& l_senderPortData : m_portPool->senderPortDataList())
         {
-            SenderPortType l_senderPort(l_senderPortData);
+            SenderPortType l_senderPort(&l_senderPortData);
             if (l_senderPort.isPortActive())
             {
                 if (l_senderPort.doesDeliverOnSubscribe())
@@ -247,9 +248,9 @@ void PortManager::handleApplications()
 {
     capro::CaproMessage l_caproMessage;
 
-    for (auto l_applicationPortData : m_portPool->appliactionPortDataList())
+    for (auto& l_applicationPortData : m_portPool->appliactionPortDataList())
     {
-        iox::popo::ApplicationPort l_applicationPort(l_applicationPortData);
+        iox::popo::ApplicationPort l_applicationPort(&l_applicationPortData);
         while (l_applicationPort.getCaProMessage(l_caproMessage))
         {
             switch (l_caproMessage.m_type)
@@ -282,7 +283,7 @@ void PortManager::handleApplications()
         // check if we have to destroy this application port
         if (l_applicationPort.toBeDestroyed())
         {
-            m_portPool->removeApplicationPort(l_applicationPortData);
+            m_portPool->removeApplicationPort(&l_applicationPortData);
             LogDebug() << "Destroyed ApplicationPortData";
         }
     }
@@ -294,11 +295,11 @@ void PortManager::handleRunnables()
     // accessible here. So currently runnables will be removed not before a process is removed
     // m_processIntrospection->removeRunnable(cxx::CString100(f_process.c_str()), cxx::CString100(f_runnable.c_str()));
 
-    for (auto runnableData : m_portPool->runnableDataList())
+    for (auto& runnableData : m_portPool->runnableDataList())
     {
-        if (runnableData->m_toBeDestroyed)
+        if (runnableData.m_toBeDestroyed)
         {
-            m_portPool->removeRunnableData(runnableData);
+            m_portPool->removeRunnableData(&runnableData);
             LogDebug() << "Destroyed RunnableData";
         }
     }
@@ -307,9 +308,9 @@ void PortManager::handleRunnables()
 bool PortManager::sendToAllMatchingSenderPorts(const capro::CaproMessage& f_message, ReceiverPortType& f_receiverSource)
 {
     bool l_senderFound = false;
-    for (auto l_senderPortData : m_portPool->senderPortDataList())
+    for (auto& l_senderPortData : m_portPool->senderPortDataList())
     {
-        SenderPortType l_senderPort(l_senderPortData);
+        SenderPortType l_senderPort(&l_senderPortData);
         if (f_receiverSource.getCaProServiceDescription() == l_senderPort.getCaProServiceDescription())
         {
             auto senderResponse = l_senderPort.dispatchCaProMessage(f_message);
@@ -332,9 +333,9 @@ bool PortManager::sendToAllMatchingSenderPorts(const capro::CaproMessage& f_mess
 
 void PortManager::sendToAllMatchingReceiverPorts(const capro::CaproMessage& f_message, SenderPortType& f_senderSource)
 {
-    for (auto l_receiverPortData : m_portPool->receiverPortDataList())
+    for (auto& l_receiverPortData : m_portPool->receiverPortDataList())
     {
-        ReceiverPortType l_receiverPort(l_receiverPortData);
+        ReceiverPortType l_receiverPort(&l_receiverPortData);
         if (l_receiverPort.getCaProServiceDescription() == f_senderSource.getCaProServiceDescription())
         {
             auto receiverResponse = l_receiverPort.dispatchCaProMessage(f_message);
@@ -367,9 +368,9 @@ void PortManager::sendToAllMatchingReceiverPorts(const capro::CaproMessage& f_me
 
 void PortManager::sendToAllMatchingInterfacePorts(const capro::CaproMessage& f_message)
 {
-    for (auto l_interfacePortData : m_portPool->interfacePortDataList())
+    for (auto& l_interfacePortData : m_portPool->interfacePortDataList())
     {
-        iox::popo::InterfacePort l_interfacePort(l_interfacePortData);
+        iox::popo::InterfacePort l_interfacePort(&l_interfacePortData);
         // not to the interface the port is located
         if (f_message.m_serviceDescription.getSourceInterface()
             != l_interfacePort.getCaProServiceDescription().getSourceInterface())
@@ -386,9 +387,9 @@ bool PortManager::areAllReceiverPortsSubscribed(std::string f_appName)
 {
     int32_t numberOfReceiverPorts{0};
     int32_t numberOfConnectedReceiverPorts{0};
-    for (auto l_receiverPortData : m_portPool->receiverPortDataList())
+    for (auto& l_receiverPortData : m_portPool->receiverPortDataList())
     {
-        ReceiverPortType receiver(l_receiverPortData);
+        ReceiverPortType receiver(&l_receiverPortData);
         if (receiver.getProcessName() == iox::cxx::string<100>(iox::cxx::TruncateToCapacity, f_appName))
         {
             numberOfReceiverPorts++;
@@ -401,57 +402,57 @@ bool PortManager::areAllReceiverPortsSubscribed(std::string f_appName)
 
 void PortManager::deletePortsOfProcess(std::string f_processName)
 {
-    for (auto port : m_portPool->senderPortDataList())
+    for (auto& port : m_portPool->senderPortDataList())
     {
-        SenderPortType l_sender(port);
+        SenderPortType l_sender(&port);
         if (f_processName == l_sender.getProcessName())
         {
             destroySenderPort(port);
         }
     }
 
-    for (auto port : m_portPool->receiverPortDataList())
+    for (auto& port : m_portPool->receiverPortDataList())
     {
-        ReceiverPortType l_receiver(port);
+        ReceiverPortType l_receiver(&port);
         if (f_processName == l_receiver.getProcessName())
         {
             destroyReceiverPort(port);
         }
     }
 
-    for (auto port : m_portPool->interfacePortDataList())
+    for (auto& port : m_portPool->interfacePortDataList())
     {
-        popo::InterfacePort l_interface(port);
+        popo::InterfacePort l_interface(&port);
         if (f_processName == l_interface.getProcessName())
         {
-            m_portPool->removeInterfacePort(port);
+            m_portPool->removeInterfacePort(&port);
             LogDebug() << "Deleted Interface of application " << f_processName;
         }
     }
 
-    for (auto port : m_portPool->appliactionPortDataList())
+    for (auto& port : m_portPool->appliactionPortDataList())
     {
-        popo::ApplicationPort l_application(port);
+        popo::ApplicationPort l_application(&port);
         if (f_processName == l_application.getProcessName())
         {
-            m_portPool->removeApplicationPort(port);
+            m_portPool->removeApplicationPort(&port);
             LogDebug() << "Deleted ApplicationPort of application " << f_processName;
         }
     }
 
-    for (auto runnableData : m_portPool->runnableDataList())
+    for (auto& runnableData : m_portPool->runnableDataList())
     {
-        if (f_processName == runnableData->m_process)
+        if (f_processName == runnableData.m_process)
         {
-            m_portPool->removeRunnableData(runnableData);
+            m_portPool->removeRunnableData(&runnableData);
             LogDebug() << "Deleted runnable of application " << f_processName;
         }
     }
 }
 
-void PortManager::destroySenderPort(SenderPortType::MemberType_t* const senderPortData)
+void PortManager::destroySenderPort(SenderPortType::MemberType_t& senderPortData)
 {
-    SenderPortType senderPort(senderPortData);
+    SenderPortType senderPort(&senderPortData);
 
     const auto& serviceDescription = senderPort.getCaProServiceDescription();
     removeEntryFromServiceRegistry(serviceDescription.getServiceIDString(), serviceDescription.getInstanceIDString());
@@ -470,15 +471,15 @@ void PortManager::destroySenderPort(SenderPortType::MemberType_t* const senderPo
     LogDebug() << "Destroyed SenderPortImpl";
 }
 
-void PortManager::destroyReceiverPort(ReceiverPortType::MemberType_t* const receiverPortData)
+void PortManager::destroyReceiverPort(ReceiverPortType::MemberType_t& receiverPortData)
 {
-    ReceiverPortType receiverPort(receiverPortData);
+    ReceiverPortType receiverPort(&receiverPortData);
 
     receiverPort.cleanup();
 
     const auto& serviceDescription = receiverPort.getCaProServiceDescription();
     capro::CaproMessage message(capro::CaproMessageType::UNSUB, serviceDescription);
-    message.m_requestPort = receiverPortData;
+    message.m_requestPort = &receiverPortData;
     m_portIntrospection.reportMessage(message);
 
     sendToAllMatchingSenderPorts(message, receiverPort);
@@ -495,9 +496,9 @@ runtime::MqMessage PortManager::findService(const capro::ServiceDescription& f_s
     // send find to all interfaces
     capro::CaproMessage l_caproMessage(capro::CaproMessageType::FIND, f_service);
 
-    for (auto l_interfacePortData : m_portPool->interfacePortDataList())
+    for (auto& l_interfacePortData : m_portPool->interfacePortDataList())
     {
-        iox::popo::InterfacePort l_interfacePort(l_interfacePortData);
+        iox::popo::InterfacePort l_interfacePort(&l_interfacePortData);
         if (!l_interfacePort.dispatchCaProMessage(l_caproMessage))
         {
             errorHandler(Error::kPORT_MANAGER__INTERFACE_FIFO_OVERFLOW);
@@ -530,14 +531,14 @@ PortManager::acquireSenderPortData(const capro::ServiceDescription& f_service,
                                    const PortConfigInfo& portConfigInfo)
 {
     // check if already in list, we currently do not support multi publisher for one CaPro ID
-    for (auto l_senderPortData : m_portPool->senderPortDataList())
+    for (auto& l_senderPortData : m_portPool->senderPortDataList())
     {
-        SenderPortType l_senderPort(l_senderPortData);
+        SenderPortType l_senderPort(&l_senderPortData);
         if (f_service == l_senderPort.getCaProServiceDescription())
         {
             LogWarn() << "Process '" << f_processName
                       << "' tried to register an unique SenderPort which is already used by '"
-                      << l_senderPortData->m_processName << "' with service '"
+                      << l_senderPortData.m_processName << "' with service '"
                       << f_service.operator cxx::Serialization().toString() << "'.";
             if (l_senderPort.isUnique())
             {
