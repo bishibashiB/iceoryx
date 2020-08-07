@@ -1,4 +1,4 @@
-// Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,24 +11,32 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifndef IOX_POSH_POPO_PORTS_BASE_PORT_INL
-#define IOX_POSH_POPO_PORTS_BASE_PORT_INL
+#ifndef IOX_UTILS_CXX_NEWTYPE_COMPARABLE_HPP
+#define IOX_UTILS_CXX_NEWTYPE_COMPARABLE_HPP
+#include "iceoryx_utils/internal/cxx/newtype/internal.hpp"
 
 namespace iox
 {
-namespace popo
+namespace cxx
 {
-inline const typename BasePort::MemberType_t* BasePort::getMembers() const noexcept
+namespace newtype
 {
-    return m_basePortDataPtr;
-}
+template <typename T>
+struct Comparable
+{
+    friend bool operator==(const T& lhs, const T& rhs) noexcept
+    {
+        return internal::newTypeAccessor(lhs) == internal::newTypeAccessor(rhs);
+    }
 
-inline BasePort::MemberType_t* BasePort::getMembers() noexcept
-{
-    return m_basePortDataPtr;
-}
+    friend bool operator!=(const T& lhs, const T& rhs) noexcept
+    {
+        return !(lhs == rhs);
+    }
+};
 
-} // namespace popo
+} // namespace newtype
+} // namespace cxx
 } // namespace iox
 
-#endif // IOX_POSH_POPO_PORTS_BASE_PORT_INL
+#endif

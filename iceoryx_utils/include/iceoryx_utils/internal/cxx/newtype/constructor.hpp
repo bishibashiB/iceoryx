@@ -1,4 +1,4 @@
-// Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,24 +11,36 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifndef IOX_POSH_POPO_PORTS_BASE_PORT_INL
-#define IOX_POSH_POPO_PORTS_BASE_PORT_INL
+#ifndef IOX_UTILS_CXX_NEWTYPE_CONSTRUCTOR_HPP
+#define IOX_UTILS_CXX_NEWTYPE_CONSTRUCTOR_HPP
 
 namespace iox
 {
-namespace popo
+namespace cxx
 {
-inline const typename BasePort::MemberType_t* BasePort::getMembers() const noexcept
+namespace newtype
 {
-    return m_basePortDataPtr;
-}
+template <typename T>
+struct CopyConstructable
+{
+};
 
-inline BasePort::MemberType_t* BasePort::getMembers() noexcept
+template <typename T>
+struct MoveConstructable
 {
-    return m_basePortDataPtr;
-}
+};
 
-} // namespace popo
+template <typename T>
+struct ConstructByValueCopy
+{
+};
+
+template <typename T>
+struct DefaultConstructable
+{
+};
+} // namespace newtype
+} // namespace cxx
 } // namespace iox
 
-#endif // IOX_POSH_POPO_PORTS_BASE_PORT_INL
+#endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,24 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifndef IOX_POSH_POPO_PORTS_BASE_PORT_INL
-#define IOX_POSH_POPO_PORTS_BASE_PORT_INL
+#ifndef IOX_POSH_POPO_BUILDING_BLOCKS_CHUNK_RECEIVER_DATA_INL
+#define IOX_POSH_POPO_BUILDING_BLOCKS_CHUNK_RECEIVER_DATA_INL
 
 namespace iox
 {
 namespace popo
 {
-inline const typename BasePort::MemberType_t* BasePort::getMembers() const noexcept
+template <uint32_t MaxChunksHeldSimultaneously, typename ChunkQueueDataType>
+inline ChunkReceiverData<MaxChunksHeldSimultaneously, ChunkQueueDataType>::ChunkReceiverData(
+    const cxx::VariantQueueTypes queueType, const mepoo::MemoryInfo& memoryInfo) noexcept
+    : ChunkQueueDataType(queueType)
+    , m_memoryInfo(memoryInfo)
 {
-    return m_basePortDataPtr;
-}
-
-inline BasePort::MemberType_t* BasePort::getMembers() noexcept
-{
-    return m_basePortDataPtr;
 }
 
 } // namespace popo
 } // namespace iox
 
-#endif // IOX_POSH_POPO_PORTS_BASE_PORT_INL
+#endif // IOX_POSH_POPO_BUILDING_BLOCKS_CHUNK_RECEIVER_DATA_INL
