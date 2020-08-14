@@ -98,9 +98,13 @@ void PortManager::doDiscovery()
 void PortManager::handleSenderPorts()
 {
     // get the changes of sender port offer state
-    for (auto& senderPortData : m_portPool->senderPortDataList())
+
+    auto& senderList = m_portPool->senderPortDataList();
+    for (auto iter = senderList.begin(); iter != senderList.cend();)
     {
-        SenderPortType senderPort(&senderPortData);
+        auto checkIter = iter;
+        ++iter;
+        SenderPortType senderPort(checkIter.operator->());
         auto returnedCaproMessage = senderPort.getCaProMessage();
         if (returnedCaproMessage.has_value())
         {
@@ -134,7 +138,7 @@ void PortManager::handleSenderPorts()
         // check if we have to destroy this sender port
         if (senderPort.toBeDestroyed())
         {
-            destroySenderPort(senderPortData);
+            destroySenderPort(*checkIter);
         }
     }
 }
@@ -142,9 +146,12 @@ void PortManager::handleSenderPorts()
 void PortManager::handleReceiverPorts()
 {
     // get requests for change of subscription state of receivers
-    for (auto& receiverPortData : m_portPool->receiverPortDataList())
+    auto& receiverList = m_portPool->receiverPortDataList();
+    for (auto iter = receiverList.begin(); iter != receiverList.cend();)
     {
-        ReceiverPortType receiverPort(&receiverPortData);
+        auto checkIter = iter;
+        ++iter;
+        ReceiverPortType receiverPort(checkIter.operator->());
         auto returnedCaproMessage = receiverPort.getCaProMessage();
         if (returnedCaproMessage.has_value())
         {
@@ -163,7 +170,7 @@ void PortManager::handleReceiverPorts()
         // check if we have to destroy this sender port
         if (receiverPort.toBeDestroyed())
         {
-            destroyReceiverPort(receiverPortData);
+            destroyReceiverPort(*checkIter);
         }
     }
 }
@@ -173,19 +180,21 @@ void PortManager::handleInterfaces()
     // check if there are new interfaces that must get an initial offer information
     cxx::list<popo::InterfacePortData*, MAX_INTERFACE_NUMBER> interfacePortsForInitialForwarding;
 
-
-    for (auto& interfacePortData : m_portPool->interfacePortDataList())
+    auto& interfaceList = m_portPool->interfacePortDataList();
+    for (auto iter = interfaceList.begin(); iter != interfaceList.cend();)
     {
-        if (interfacePortData.m_doInitialOfferForward)
+        auto checkIter = iter;
+        ++iter;
+        if (checkIter->m_doInitialOfferForward)
         {
-            interfacePortsForInitialForwarding.push_back(&interfacePortData);
-            interfacePortData.m_doInitialOfferForward = false;
+            interfacePortsForInitialForwarding.push_back(checkIter.operator->());
+            checkIter->m_doInitialOfferForward = false;
         }
 
         // check if we have to destroy this interface port
-        if (interfacePortData.m_toBeDestroyed)
+        if (checkIter->m_toBeDestroyed)
         {
-            m_portPool->removeInterfacePort(&interfacePortData);
+            m_portPool->removeInterfacePort(checkIter.operator->());
             LogDebug() << "Destroyed InterfacePortData";
         }
     }
@@ -246,11 +255,16 @@ void PortManager::handleApplications()
 {
     capro::CaproMessage caproMessage;
 
-    for (auto& applicationPortData : m_portPool->appliactionPortDataList())
+    auto& appList = m_portPool->appliactionPortDataList();
+    for (auto iter = appList.begin(); iter != appList.cend();)
     {
-        iox::popo::ApplicationPort applicationPort(&applicationPortData);
-        while (auto maybeCaproMessage = applicationPort.getCaProMessage(caproMessage))
+        auto checkIter = iter;
+        ++iter;
+        iox::popo::ApplicationPort applicationPort(checkIter.operator->());
+
+        while (auto maybeCaproMessage = applicationPort.getCaProMessage())
         {
+            auto& caproMessage = maybeCaproMessage.value();
             switch (caproMessage.m_type)
             {
             case capro::CaproMessageType::OFFER:
@@ -281,7 +295,7 @@ void PortManager::handleApplications()
         // check if we have to destroy this application port
         if (applicationPort.toBeDestroyed())
         {
-            m_portPool->removeApplicationPort(&applicationPortData);
+            m_portPool->removeApplicationPort(checkIter.operator->());
             LogDebug() << "Destroyed ApplicationPortData";
         }
     }
@@ -294,11 +308,15 @@ void PortManager::handleRunnables()
     // m_processIntrospection->removeRunnable(cxx::CString100(process.c_str()),
     // cxx::CString100(runnable.c_str()));
 
-    for (auto& runnableData : m_portPool->runnableDataList())
+    auto& runnableList = m_portPool->runnableDataList();
+    for (auto iter = runnableList.begin(); iter != runnableList.cend();)
     {
-        if (runnableData.m_toBeDestroyed)
+        auto checkIter = iter;
+        ++iter;
+
+        if (checkIter->m_toBeDestroyed)
         {
-            m_portPool->removeRunnableData(&runnableData);
+            m_portPool->removeRunnableData(checkIter.operator->());
             LogDebug() << "Destroyed RunnableData";
         }
     }
@@ -374,10 +392,7 @@ void PortManager::sendToAllMatchingInterfacePorts(const capro::CaproMessage& mes
         if (message.m_serviceDescription.getSourceInterface()
             != interfacePort.getCaProServiceDescription().getSourceInterface())
         {
-            if (!interfacePort.dispatchCaProMessage(message))
-            {
-                errorHandler(Error::kPORT_MANAGER__INTERFACE_FIFO_OVERFLOW);
-            }
+            interfacePort.dispatchCaProMessage(message);
         }
     }
 }
@@ -401,49 +416,64 @@ bool PortManager::areAllReceiverPortsSubscribed(std::string appName)
 
 void PortManager::deletePortsOfProcess(std::string processName)
 {
-    for (auto& port : m_portPool->senderPortDataList())
+    auto& senderList = m_portPool->senderPortDataList();
+    for (auto iter = senderList.begin(); iter != senderList.cend();)
     {
-        SenderPortType sender(&port);
+        auto checkIter = iter;
+        ++iter;
+        SenderPortType sender(checkIter.operator->());
         if (processName == sender.getProcessName())
         {
-            destroySenderPort(port);
+            destroySenderPort(*checkIter);
         }
     }
 
-    for (auto& port : m_portPool->receiverPortDataList())
+    auto& receiverList = m_portPool->receiverPortDataList();
+    for (auto iter = receiverList.begin(); iter != receiverList.cend();)
     {
-        ReceiverPortType receiver(&port);
+        auto checkIter = iter;
+        ++iter;
+        ReceiverPortType receiver(checkIter.operator->());
         if (processName == receiver.getProcessName())
         {
-            destroyReceiverPort(port);
+            destroyReceiverPort(*checkIter);
         }
     }
 
-    for (auto& port : m_portPool->interfacePortDataList())
+    auto& interfaceList = m_portPool->interfacePortDataList();
+    for (auto iter = interfaceList.begin(); iter != interfaceList.cend();)
     {
-        popo::InterfacePort interface(&port);
+        auto checkIter = iter;
+        ++iter;
+        popo::InterfacePort interface(checkIter.operator->());
         if (processName == interface.getProcessName())
         {
-            m_portPool->removeInterfacePort(&port);
+            m_portPool->removeInterfacePort(checkIter.operator->());
             LogDebug() << "Deleted Interface of application " << processName;
         }
     }
 
-    for (auto& port : m_portPool->appliactionPortDataList())
+    auto& appList = m_portPool->appliactionPortDataList();
+    for (auto iter = appList.begin(); iter != appList.cend();)
     {
-        popo::ApplicationPort application(&port);
+        auto checkIter = iter;
+        ++iter;
+        popo::ApplicationPort application(checkIter.operator->());
         if (processName == application.getProcessName())
         {
-            m_portPool->removeApplicationPort(&port);
+            m_portPool->removeApplicationPort(checkIter.operator->());
             LogDebug() << "Deleted ApplicationPort of application " << processName;
         }
     }
 
-    for (auto& runnableData : m_portPool->runnableDataList())
+    auto& runnableList = m_portPool->runnableDataList();
+    for (auto iter = runnableList.begin(); iter != runnableList.cend();)
     {
-        if (processName == runnableData->m_process)
+        auto checkIter = iter;
+        ++iter;
+        if (processName == checkIter->m_process)
         {
-            m_portPool->removeRunnableData(&runnableData);
+            m_portPool->removeRunnableData(checkIter.operator->());
             LogDebug() << "Deleted runnable of application " << processName;
         }
     }
