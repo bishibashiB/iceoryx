@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//#include <iterator>
 
 #include "iceoryx_utils/cxx/list.hpp"
 #include "test.hpp"
@@ -134,7 +133,6 @@ int list_test::copyAssignment;
 int list_test::dTor;
 int list_test::classValue;
 
-
 namespace
 {
 template <typename IterType>
@@ -154,6 +152,7 @@ bool dummyFunc(bool whatever)
     return whatever;
 }
 } // namespace
+
 
 TEST_F(list_test, NewlyCreatedListIsEmpty)
 {
@@ -1205,7 +1204,7 @@ TEST_F(list_test, InsertSomeElementsListLValue)
     ASSERT_THAT(customCTor, Eq(6u));
 
     iter = sut.begin();
-    EXPECT_THAT((*iter).m_value, Eq(4));
+    EXPECT_THAT(iter->m_value, Eq(4));
     EXPECT_THAT((++iter)->m_value, Eq(3));
     EXPECT_THAT((++iter)->m_value, Eq(DEFAULT_VALUE));
     EXPECT_THAT((++iter)->m_value, Eq(2));
@@ -1932,6 +1931,7 @@ TEST_F(list_test, RemoveNotExistentElementFromList)
     EXPECT_THAT(cTor, Eq(2));
     EXPECT_THAT(customCTor, Eq(5));
     EXPECT_THAT(dTor, Eq(1));
+    EXPECT_THAT(classValue, Eq(1243));
     EXPECT_THAT(cut1.size(), Eq(6));
     EXPECT_THAT(cnt, Eq(0));
 
@@ -2032,6 +2032,7 @@ TEST_F(list_test, RemoveIfOneDefaultElementFromList)
     EXPECT_THAT(cTor, Eq(2));
     EXPECT_THAT(customCTor, Eq(4));
     EXPECT_THAT(dTor, Eq(2));
+    EXPECT_THAT(classValue, Eq(C_TOR_TEST_VALUE_DEFAULT_VALUE));
     EXPECT_THAT(cut1.size(), Eq(4));
     EXPECT_THAT(cnt, Eq(2));
 
@@ -2155,4 +2156,103 @@ TEST_F(list_test, RemoveIfAllFromList)
     EXPECT_THAT(dTor, Eq(3));
     EXPECT_THAT(cut1.size(), Eq(0));
     EXPECT_THAT(cnt, Eq(3));
+}
+
+
+TEST_F(list_test, invalidIteratorErase)
+{
+    for (uint64_t i = 0; i < TESTLISTCAPACITY; ++i)
+    {
+        sut.emplace_back((const uint64_t)i);
+    }
+
+    auto iter = sut.cbegin();
+    ++iter;
+    sut.erase(iter);
+
+    EXPECT_DEATH(sut.erase(iter), "");
+}
+
+TEST_F(list_test, invalidIteratorIncrement)
+{
+    for (uint64_t i = 0; i < TESTLISTCAPACITY; ++i)
+    {
+        sut.emplace_back((const uint64_t)i);
+    }
+
+    auto iter = sut.cbegin();
+    ++iter;
+    sut.erase(iter);
+
+    EXPECT_DEATH(++iter, "");
+}
+
+TEST_F(list_test, invalidIteratorDecrement)
+{
+    for (uint64_t i = 0; i < TESTLISTCAPACITY; ++i)
+    {
+        sut.emplace_back((const uint64_t)i);
+    }
+
+    auto iter = sut.cbegin();
+    ++iter;
+    sut.erase(iter);
+
+    EXPECT_DEATH(--iter, "");
+}
+
+TEST_F(list_test, invalidIteratorComparison)
+{
+    for (uint64_t i = 0; i < TESTLISTCAPACITY; ++i)
+    {
+        sut.emplace_back((const uint64_t)i);
+    }
+
+    auto iter = sut.cbegin();
+    ++iter;
+    auto iter2 = sut.erase(iter);
+
+    EXPECT_DEATH(sut.cbegin() == iter, "");
+}
+
+TEST_F(list_test, invalidIteratorComparisonUnequal)
+{
+    for (uint64_t i = 0; i < TESTLISTCAPACITY; ++i)
+    {
+        sut.emplace_back((const uint64_t)i);
+    }
+
+    auto iter = sut.cbegin();
+    ++iter;
+    auto iter2 = sut.erase(iter);
+
+    EXPECT_DEATH(dummyFunc(iter2 != iter), "");
+}
+
+TEST_F(list_test, invalidIteratorDereferencing)
+{
+    for (uint64_t i = 0; i < TESTLISTCAPACITY; ++i)
+    {
+        sut.emplace_back((const uint64_t)i);
+    }
+
+    auto iter = sut.cbegin();
+    ++iter;
+    auto iter2 = sut.erase(iter);
+
+    EXPECT_DEATH(dummyFunc((*iter).m_value), "");
+}
+
+TEST_F(list_test, invalidIteratorAddressOfOperator)
+{
+    for (uint64_t i = 0; i < TESTLISTCAPACITY; ++i)
+    {
+        sut.emplace_back((const uint64_t)i);
+    }
+
+    auto iter = sut.cbegin();
+    ++iter;
+    auto iter2 = sut.erase(iter);
+
+    EXPECT_DEATH(dummyFunc(iter->m_value == 12), "");
 }

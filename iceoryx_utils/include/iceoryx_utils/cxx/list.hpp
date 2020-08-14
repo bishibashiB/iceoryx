@@ -30,6 +30,23 @@ namespace cxx
 ///         attempt to add elements to a full list will be ignored.
 ///         Capacity must at least be 1, (unintended) negative initialization is rejected with compile assertion
 ///         limitation: concurrency concerns have to be handled by client side.
+///
+///      overview of cxx::forward_list deviations to std::forward_list(C++11)
+///         - list declaration with mandatory max list size argument
+///         - memeber functions don't throw exception but will trigger different failure handling
+///         - push_front/~_back returns a bool (instead of void) informing on successful insertion (true)
+///         - pop_front/~_back returns a bool (instead of void) informing on successful removal (true), otherwise empty
+///         (false)
+///         - emplace_front/~_back returns a reference to the inserted element (instead of void), this is C++17-conform
+///         - remove / remove_if returns a the number of removed elements (instead of void), this is C++20-conform
+///
+///         (yet) missing implementations
+///         -------------------------------
+///         - allocator, difference_type / range operations
+///         - assign, resize, swap, merge, splice_after, reverse, rbegin/crbegin, rend/crend, unique, sort
+///         - list operator==, operator!=, operator<, operator<=, operator>, operator>=
+///
+///
 /// @param T type user data to be managed within list
 /// @param Capacity number of maximum list elements a client can push to the list. minimum value is '1'
 template <typename T, uint64_t Capacity>
@@ -38,13 +55,12 @@ class list
   private:
     // forward declarations, private
     struct ListLink;
+    template <bool>
+    class iterator_base;
 
   public:
-    // forward declarations, public
-    class const_iterator;
-
-    static_assert(Capacity > 0, "Capacity must be an unsigned integral type >0");
-
+    using iterator = iterator_base<false>;
+    using const_iterator = iterator_base<true>;
     using value_type = T;
     using size_type = decltype(Capacity);
 
@@ -77,161 +93,6 @@ class list
     /// @return reference to created list
     list& operator=(list&& rhs) noexcept;
 
-    /// @brief nested iterator class for list element operations including element access via dereferencing
-    ///         iterator may be assigned to different list (non-const pointer to m_List), different list iterators
-    ///         however are not compareable
-
-    class iterator
-    {
-      public:
-        // provide the following public types for a std::iterator_traits compatible iterator_category interface
-        using iterator_category = std::bidirectional_iterator_tag;
-        using value_type = T;
-        using difference_type = void; // so far no difference operations supported
-        using pointer = T*;
-        using reference = T&;
-        // end of iterator_traits interface
-
-        /// @brief prefix increment iterator, so it points to the next list element
-        ///         when trying to increment beyond the end of the list,
-        ///         iterator stays pointing at the end and a message is forwarded to the error_message
-        ///         handler / cerr stream
-        /// @return reference to this iterator object
-        iterator& operator++() noexcept;
-
-        /// @brief prefix decrement iterator, so it points to the previous list element
-        ///         when trying to decrement beyond the beginning of the list,
-        ///         iterator stays pointing at the beginning and a message is forwarded to the error_message
-        ///         handler / cerr stream
-        /// @return reference to this iterator object
-        iterator& operator--() noexcept;
-
-        /// @brief comparing list iterators for equality
-        ///         the referenced list position is compared, not the content of the list element (T-typed)
-        ///         there is no content for fictional elements at BEGIN_END_LINK_INDEX
-        ///         only iterators of the same parent list can be compared; in case of misuse, terminate() is invoked
-        ///         ADL doesn't find const_iterator::operator== without providing this
-        /// @param[in] rhs_citer is the 2nd iterator to compare to
-        /// @return list position for two iterators is the same (true) or different (false)
-        bool operator==(const iterator rhs_citer) const noexcept;
-
-        /// @brief comparing list iterators for equality
-        ///         the referenced list position is compared, not the content of the list element (T-typed)
-        ///         there is no content for fictional elements at BEGIN_END_LINK_INDEX
-        ///         only iterators of the same parent list can be compared; in case of misuse, terminate() is invoked
-        /// @param[in] rhs_citer is the 2nd iterator to compare to
-        /// @return list position for two iterators is the same (true) or different (false)
-        bool operator==(const const_iterator rhs_citer) const noexcept;
-
-        /// @brief comparing list iterators for non-equality
-        ///         the referenced list position is compared, not the content of the list element (T-typed)
-        ///         there is no content for fictional elements at BEGIN_END_LINK_INDEX
-        ///         only iterators of the same parent list can be compared; in case of misuse, terminate() is invoked
-        ///         ADL doesn't find const_iterator::operator== without providing this
-        /// @param[in] rhs_citer is the 2nd iterator to compare to
-        /// @return list position for two iterators is the same (true) or different (false)
-        bool operator!=(const iterator rhs_citer) const noexcept;
-
-        /// @brief comparing list iterators for non-equality
-        ///         the referenced list position is compared, not the content of the list element (T-typed)
-        ///         there is no content for fictional elements at BEGIN_END_LINK_INDEX
-        ///         only iterators of the same parent list can be compared; in case of misuse, terminate() is invoked
-        /// @param[in] rhs_citer is the 2nd iterator to compare to
-        /// @return list position for two iterators is the same (true) or different (false)
-        bool operator!=(const const_iterator rhs_citer) const noexcept;
-
-        /// @brief dereferencing element content via iterator-position element
-        /// @return reference to list element data
-        T& operator*() const noexcept;
-
-        /// @brief dereferencing element content via iterator-position element
-        /// @return pointer to list element data
-        T* operator->() const noexcept;
-
-      private:
-        /// @brief private construct for an iterator, the iterator is bundled to
-        ///         an existing parent (object) of type list,
-        ///         an iterator is only constructed through calls begin() or end()
-        /// @param[in] parent is the list the this iterator operates on
-        /// @param[in] idx is the index of the list element (within allocated memory of parent list)
-        explicit iterator(list* parent, size_type idx) noexcept;
-
-        friend class list<T, Capacity>;
-        list<T, Capacity>* m_list;
-        size_type m_iterListNodeIdx;
-
-    }; // class iterator
-
-    /// @brief nested const_iterator class, --> linked data element is 'const'
-    class const_iterator
-    {
-      public:
-        // provide the following public types for a std::iterator compatible iterator_category interface
-        using iterator_category = std::bidirectional_iterator_tag;
-        using value_type = const T;
-        using difference_type = void;
-        using pointer = const T*;
-        using reference = const T&;
-
-
-        /// @brief construct a const_iterator from an (non-const_) iterator
-        /// @param[in] iter is the iterator which will deliver list and index info for the const_iterator
-        const_iterator(const iterator& iter) noexcept;
-
-
-        /// @brief prefix increment iterator, so it points to the next list element
-        ///         when trying to increment beyond the end of the list,
-        ///         iterator stays pointing at the end and a message is forwarded to the error_message
-        ///         handler / cerr stream
-        /// @return reference to this iterator object
-        const_iterator& operator++() noexcept;
-
-        /// @brief prefix decrement iterator, so it points to the previous list element
-        ///         when trying to decrement beyond the beginning of the list,
-        ///         iterator stays pointing at the beginning and a message is forwarded to the error_message
-        ///         handler / cerr stream
-        /// @return reference to this iterator object
-        const_iterator& operator--() noexcept;
-
-        /// @brief comparing list iterators for equality
-        ///         the referenced list position is compared, not the content of the list element (T-typed)
-        ///         -> there is no content for fictional elements at BEGIN_END_LINK_INDEX
-        ///         only iterators of the same parent list can be compared; in case of misuse, terminate() is invoked
-        ///         share with between iterator and const_iterator
-        /// @param[in] rhs_citer is the 2nd iterator to compare to
-        /// @return list position for two iterators is the same (true) or different (false)
-        bool operator==(const const_iterator rhs_citer) const noexcept;
-
-        /// @brief comparing list iterators for non-equality
-        ///         the referenced list position is compared, not the content of the list element (T-typed)
-        ///         -> there is no content for fictional elements at BEGIN_END_LINK_INDEX
-        ///         only iterators of the same parent list can be compared; in case of misuse, terminate() is invoked
-        ///         share with between iterator and const_iterator
-        /// @param[in] rhs_citer is the 2nd iterator to compare to
-        /// @return list position for two iterators is the same (true) or different (false)
-        bool operator!=(const const_iterator rhs_citer) const noexcept;
-
-        /// @brief dereferencing element content via iterator-position element
-        /// @return reference to list element data
-        const T& operator*() const noexcept;
-
-        /// @brief dereferencing element content via iterator-position element
-        /// @return pointer to const list data element
-        const T* operator->() const noexcept;
-
-      private:
-        /// @brief private construct for an iterator, the iterator is bundled to
-        ///         an existing parent (object) of type list,
-        ///         an iterator is only constructed through calls to begin() or end()
-        /// @param[in] parent is the const list the this iterator operates on
-        /// @param[in] idx is the index of the list element (within allocated memory of parent list)
-        explicit const_iterator(const list* parent, size_type idx) noexcept;
-
-        friend class list<T, Capacity>;
-        const list<T, Capacity>* m_list;
-        size_type m_iterListNodeIdx;
-
-    }; // class const_iterator
 
     /// @brief default list operation to retrieve an interator to first list element
     /// @return iterator to first list element, returns iterator to end() when list is empty
@@ -347,13 +208,13 @@ class list
     /// @brief remove the first element which matches the given comparing element (compare by value)
     ///         requires a the template type T to have operator== defined.
     /// @param[in] data value to compare to
-    /// @return the number of elements removed
+    /// @return the number of elements removed, return is C++20-conform
     size_type remove(const T& data) noexcept;
 
     /// @brief remove the first element which matches the provided comparison function
     ///         requires a the template type T to have a operator== defined.
     /// @param[in] pred unary predicate which returns ​true if the element should be removed
-    /// @return the number of elements removed
+    /// @return the number of elements removed, return is C++20-conform
     template <typename UnaryPredicate>
     size_type remove_if(UnaryPredicate pred) noexcept;
 
@@ -389,6 +250,83 @@ class list
     iterator insert(const_iterator citer, T&& data) noexcept;
 
   private:
+    /// @brief nested iterator class for list element operations including element access
+    ///         comparison of iterator from different list is rejected by terminate()
+    template <bool is_const_iterator = true>
+    class iterator_base
+    {
+      public:
+        // provide the following public types for a std::iterator compatible iterator_category interface
+        using iterator_category = std::bidirectional_iterator_tag;
+        using value_type = typename std::conditional<is_const_iterator, const T, T>::type;
+        using difference_type = void;
+        using pointer = typename std::conditional<is_const_iterator, const T*, T*>::type;
+        using reference = typename std::conditional<is_const_iterator, const T&, T&>::type;
+
+
+        /// @brief construct a const_iterator from an iterator
+        /// @param[in] iter is the iterator which will deliver list and index info for the const_iterator
+        iterator_base(const iterator_base<false>& iter);
+
+        /// @brief prefix increment iterator, so it points to the next list element
+        ///         when trying to increment beyond the end of the list, iterator stays pointing at the end, a
+        ///         message is forwarded to the error_message handler / cerr stream
+        /// @return reference to this iterator object
+        iterator_base& operator++() noexcept;
+
+        /// @brief prefix decrement iterator, so it points to the previous list element
+        ///         when trying to increment beyond the end of the list, iterator stays pointing at the end, a
+        ///         message is forwarded to the error_message handler / cerr stream
+        /// @return reference to this iterator object
+        iterator_base& operator--() noexcept;
+
+
+        /// @brief comparing list iterators for equality
+        ///         the referenced list position is compared, not the content of the list element (T-typed)
+        ///         -> there is no content for fictional elements at BEGIN_END_LINK_INDEX
+        ///         only iterators of the same parent list can be compared; in case of misuse, terminate() is invoked
+        /// @param[in] rhs is the 2nd iterator to compare to
+        /// @return list position for two iterators is the same (true) or different (false)
+        template <bool is_const_iterator_other>
+        bool operator==(const iterator_base<is_const_iterator_other>& rhs) const noexcept;
+
+        /// @brief comparing list iterators for non-equality
+        ///         the referenced list position is compared, not the content of the list element (T-typed)
+        ///         -> there is no content for fictional elements at BEGIN_END_LINK_INDEX
+        ///         only iterators of the same parent list can be compared; in case of misuse, terminate() is invoked
+        /// @param[in] rhs is the 2nd iterator to compare to
+        /// @return list position for two iterators is the same (true) or different (false)
+        template <bool is_const_iterator_other>
+        bool operator!=(const iterator_base<is_const_iterator_other>& rhs) const noexcept;
+
+        /// @brief dereferencing element content via iterator-position element
+        /// @return reference to list element data
+        reference operator*() const noexcept;
+
+        /// @brief dereferencing element content via iterator-position element
+        /// @return pointer to const list data element
+        pointer operator->() const noexcept;
+
+
+      private:
+        using parentListPointer =
+            typename std::conditional<is_const_iterator, const list<T, Capacity>*, list<T, Capacity>*>::type;
+
+        /// @brief private construct for an iterator, the iterator is bundled to
+        ///         an existing parent (object) of type list,
+        ///         an iterator is only constructed through calls to begin() or end()
+        /// @param[in] parent is the const list the this iterator operates on
+        /// @param[in] idx is the index of the list element (within allocated memory of parent list)
+        explicit iterator_base(parentListPointer parent, size_type idx) noexcept;
+
+        // Make iterator_base<true> a friend class of iterator_base<false> so the copy constructor can access the
+        // private member variables.
+        friend class iterator_base<true>;
+        friend class list<T, Capacity>;
+        parentListPointer m_list;
+        size_type m_iterListNodeIdx;
+    };
+
     struct NodeLink
     {
         size_type nextIdx;
@@ -396,42 +334,47 @@ class list
     };
 
     void init() noexcept;
-    T* getDataPtrFromIdx(size_type) const noexcept;
-    T* getDataBasePtr() const noexcept;
-    NodeLink* getLinkPtrFromIdx(size_type idx) const noexcept;
-    NodeLink* getLinkBasePtr() const noexcept;
+    T* getDataPtrFromIdx(const size_type idx) noexcept;
+    const T* getDataPtrFromIdx(const size_type idx) const noexcept;
 
-    bool isValidIteratorIndex(size_type index) const noexcept;
-    bool isValidElementIndex(size_type index) const noexcept;
-    size_type getPrevIdx(size_type idx) const noexcept;
-    size_type getNextIdx(size_type idx) const noexcept;
-    void setPrevIdx(size_type idx, size_type prevIdx) noexcept;
-    void setNextIdx(size_type idx, size_type nextIdx) noexcept;
+    bool isValidElementIdx(const size_type idx) const noexcept;
+    bool handleInvalidElement(const size_type idx) const noexcept;
+    bool handleInvalidIterator(const const_iterator& iter) const noexcept;
+    bool invalidIterOrDifferentLists(const const_iterator& iter) const noexcept;
+    size_type& getPrevIdx(const size_type idx) noexcept;
+    size_type& getNextIdx(const size_type idx) noexcept;
+    size_type& getPrevIdx(const const_iterator& iter) noexcept;
+    size_type& getNextIdx(const const_iterator& iter) noexcept;
+    const size_type& getPrevIdx(const size_type idx) const noexcept;
+    const size_type& getNextIdx(const size_type idx) const noexcept;
+    const size_type& getPrevIdx(const const_iterator& iter) const noexcept;
+    const size_type& getNextIdx(const const_iterator& iter) const noexcept;
+    void setPrevIdx(const size_type idx, const size_type prevIdx) noexcept;
+    void setNextIdx(const size_type idx, const size_type nextIdx) noexcept;
 
-    static void errorMessage(const char* f_source, const char* f_msg) noexcept;
+    static void errorMessage(const char* source, const char* msg) noexcept;
 
     //***************************************
     //    members
     //***************************************
 
-    static constexpr size_type NODE_LINK_COUNT{size_type(Capacity) + 1U};
     static constexpr size_type BEGIN_END_LINK_INDEX{size_type(Capacity)};
-    // static constexpr size_type INVALID_INDEX{NODE_LINK_COUNT};
+    static constexpr size_type NODE_LINK_COUNT{size_type(Capacity) + 1U};
+    static constexpr size_type INVALID_INDEX{NODE_LINK_COUNT};
 
     // two member variables point to head of freeList and usedList
     // available elements are moved between freeList and usedList when inserted or removed
     size_type m_freeListHeadIdx{0U};
 
     // m_links array is one element bigger than request element count. In this additional element links are stored
-    // to the beginning and end of the list this additional element (index position 'capacity') contains
-    // BEGIN_END_LINK_INDEX to previsous and nect element when list is empty. Otherwise previsous will point to the last
-    // valid element and next will point to the first used list element
-    using nodelink_t = uint8_t[sizeof(NodeLink)];
+    // to the beginning and end of the list. This additional element (index position 'capacity' aka
+    // BEGIN_END_LINK_INDEX) 'previous' will point to the last valid element (end()) and 'next' will point to the
+    // first used list element (begin())
+    NodeLink m_links[NODE_LINK_COUNT];
     using element_t = uint8_t[sizeof(T)];
-    alignas(alignof(T)) nodelink_t m_links[NODE_LINK_COUNT];
     alignas(alignof(T)) element_t m_data[Capacity];
 
-    size_type m_size{0u};
+    size_type m_size{0U};
 }; // list
 
 } // namespace cxx
