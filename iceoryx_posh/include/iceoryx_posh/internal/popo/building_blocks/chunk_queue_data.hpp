@@ -26,14 +26,15 @@ namespace iox
 {
 namespace popo
 {
-template <typename ChunkQueueDataProperties>
-struct ChunkQueueData
+template <typename ChunkQueueDataProperties, typename LockingPolicy>
+struct ChunkQueueData : public LockingPolicy
 {
+    using LockGuard_t = std::lock_guard<const ChunkQueueData<ChunkQueueDataProperties, LockingPolicy>>;
     using ChunkQueueDataProperties_t = ChunkQueueDataProperties;
 
     explicit ChunkQueueData(cxx::VariantQueueTypes queueType) noexcept;
 
-    static constexpr uint32_t MAX_CAPACITY = ChunkQueueDataProperties_t::MAX_QUEUE_CAPACITY;
+    static constexpr uint64_t MAX_CAPACITY = ChunkQueueDataProperties_t::MAX_QUEUE_CAPACITY;
     cxx::VariantQueue<ChunkTuple, MAX_CAPACITY> m_queue;
     std::atomic_bool m_queueHasOverflown{false};
 

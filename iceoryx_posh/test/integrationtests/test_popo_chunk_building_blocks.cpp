@@ -15,6 +15,7 @@
 #include "iceoryx_posh/internal/popo/building_blocks/chunk_distributor.hpp"
 #include "iceoryx_posh/internal/popo/building_blocks/chunk_receiver.hpp"
 #include "iceoryx_posh/internal/popo/building_blocks/chunk_sender.hpp"
+#include "iceoryx_posh/internal/popo/building_blocks/locking_policy.hpp"
 #include "iceoryx_posh/mepoo/mepoo_config.hpp"
 
 #include "test.hpp"
@@ -51,10 +52,10 @@ struct ChunkDistributorConfig
 
 struct ChunkQueueConfig
 {
-    static constexpr uint32_t MAX_QUEUE_CAPACITY = NUM_CHUNKS_IN_POOL;
+    static constexpr uint64_t MAX_QUEUE_CAPACITY = NUM_CHUNKS_IN_POOL;
 };
 
-using ChunkQueueData_t = ChunkQueueData<ChunkQueueConfig>;
+using ChunkQueueData_t = ChunkQueueData<ChunkQueueConfig, ThreadSafePolicy>;
 using ChunkDistributorData_t =
     ChunkDistributorData<ChunkDistributorConfig, ThreadSafePolicy, ChunkQueuePusher<ChunkQueueData_t>>;
 using ChunkDistributor_t = ChunkDistributor<ChunkDistributorData_t>;
