@@ -93,18 +93,19 @@ PortPool::addRunnableData(const iox::cxx::CString100& process,
 void PortPool::removeInterfacePort(popo::InterfacePortData* const portData) noexcept
 {
     m_portPoolDataBase->m_interfacePortMembers.remove_if(
-        [&](popo::InterfacePortData& port) { return &port == portData; });
+        [portData](popo::InterfacePortData& port) { return &port == portData; });
 }
 
 void PortPool::removeApplicationPort(popo::ApplicationPortData* const portData) noexcept
 {
     m_portPoolDataBase->m_applicationPortMembers.remove_if(
-        [&](popo::ApplicationPortData& port) { return &port == portData; });
+        [portData](popo::ApplicationPortData& port) { return &port == portData; });
 }
 
 void PortPool::removeRunnableData(runtime::RunnableData* const runnableData) noexcept
 {
-    m_portPoolDataBase->m_runnableMembers.remove_if([&](runtime::RunnableData& r) { return &r == runnableData; });
+    m_portPoolDataBase->m_runnableMembers.remove_if(
+        [runnableData](runtime::RunnableData& r) { return &r == runnableData; });
 }
 
 std::atomic<uint64_t>* PortPool::serviceRegistryChangeCounter() noexcept
