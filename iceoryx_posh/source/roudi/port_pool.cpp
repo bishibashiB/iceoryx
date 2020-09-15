@@ -25,17 +25,17 @@ PortPool::PortPool(PortPoolDataBase& portPoolDataBase) noexcept
 {
 }
 
-cxx::list<popo::InterfacePortData, MAX_INTERFACE_NUMBER>& PortPool::interfacePortDataList() noexcept
+cxx::list<popo::InterfacePortData, MAX_INTERFACE_NUMBER>& PortPool::getInterfacePortDataList() noexcept
 {
     return m_portPoolDataBase->m_interfacePortMembers;
 }
 
-cxx::list<popo::ApplicationPortData, MAX_PROCESS_NUMBER>& PortPool::appliactionPortDataList() noexcept
+cxx::list<popo::ApplicationPortData, MAX_PROCESS_NUMBER>& PortPool::getApplicationPortDataList() noexcept
 {
     return m_portPoolDataBase->m_applicationPortMembers;
 }
 
-cxx::list<runtime::RunnableData, MAX_RUNNABLE_NUMBER>& PortPool::runnableDataList() noexcept
+cxx::list<runtime::RunnableData, MAX_RUNNABLE_NUMBER>& PortPool::getRunnableDataList() noexcept
 {
     return m_portPoolDataBase->m_runnableMembers;
 }
@@ -72,10 +72,8 @@ PortPool::addApplicationPort(const std::string& applicationName) noexcept
     }
 }
 
-cxx::expected<runtime::RunnableData*, PortPoolError>
-PortPool::addRunnableData(const ProcessName_t& process,
-                          const RunnableName_t& runnable,
-                          const uint64_t runnableDeviceIdentifier) noexcept
+cxx::expected<runtime::RunnableData*, PortPoolError> PortPool::addRunnableData(
+    const ProcessName_t& process, const RunnableName_t& runnable, const uint64_t runnableDeviceIdentifier) noexcept
 {
     if (!m_portPoolDataBase->m_runnableMembers.full())
     {
@@ -90,13 +88,12 @@ PortPool::addRunnableData(const ProcessName_t& process,
     }
 }
 
-cxx::expected<popo::ConditionVariableData*, PortPoolError>
-PortPool::addConditionVariableData()
+cxx::expected<popo::ConditionVariableData*, PortPoolError> PortPool::addConditionVariableData() noexcept
 {
-    if (m_portPoolDataBase->m_conditionVariableMembers.hasFreeSpace())
+    if (!m_portPoolDataBase->m_conditionVariableMembers.full())
     {
-        auto conditionVariableData = m_portPoolDataBase->m_conditionVariableMembers.insert();
-        return cxx::success<popo::ConditionVariableData*>(conditionVariableData);
+        auto& conditionVariableData = m_portPoolDataBase->m_conditionVariableMembers.emplace_front();
+        return cxx::success<popo::ConditionVariableData*>(&conditionVariableData);
     }
     else
     {
