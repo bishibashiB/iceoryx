@@ -21,7 +21,6 @@
 #include "iceoryx_posh/internal/runtime/runnable_data.hpp"
 #include "iceoryx_utils/cxx/list.hpp"
 #include "iceoryx_utils/cxx/optional.hpp"
-#include "iceoryx_utils/cxx/vector.hpp"
 
 namespace iox
 {

@@ -56,14 +56,15 @@ class PortPool
     /// there could be a member "cxx::vector<popo::SenderPortData* m_senderPorts;" and senderPorts() would just update
     /// this member if the sender ports actually changed
     /// @deprecated #25
-    virtual cxx::list<SenderPortType::MemberType_t, MAX_PUBLISHERS>& senderPortDataList() noexcept = 0;
+    virtual cxx::vector<SenderPortType::MemberType_t*, MAX_PUBLISHERS> senderPortDataList() noexcept = 0;
     /// @deprecated #25
-    virtual cxx::list<ReceiverPortType::MemberType_t, MAX_SUBSCRIBERS>& receiverPortDataList() noexcept = 0;
-    virtual cxx::list<PublisherPortRouDiType::MemberType_t, MAX_PUBLISHERS>& getPublisherPortDataList() noexcept = 0;
-    virtual cxx::list<SubscriberPortProducerType::MemberType_t, MAX_SUBSCRIBERS>& getSubscriberPortDataList() noexcept = 0;
-    cxx::list<popo::InterfacePortData, MAX_INTERFACE_NUMBER>& getInterfacePortDataList() noexcept;
-    cxx::list<popo::ApplicationPortData, MAX_PROCESS_NUMBER>& getApplicationPortDataList() noexcept;
-    cxx::list<runtime::RunnableData, MAX_RUNNABLE_NUMBER>& getRunnableDataList() noexcept;
+    virtual cxx::vector<ReceiverPortType::MemberType_t*, MAX_SUBSCRIBERS> receiverPortDataList() noexcept = 0;
+    virtual cxx::vector<PublisherPortRouDiType::MemberType_t*, MAX_PUBLISHERS> getPublisherPortDataList() noexcept = 0;
+    virtual cxx::vector<SubscriberPortProducerType::MemberType_t*, MAX_SUBSCRIBERS>
+    getSubscriberPortDataList() noexcept = 0;
+    cxx::vector<popo::InterfacePortData*, MAX_INTERFACE_NUMBER> getInterfacePortDataList() noexcept;
+    cxx::vector<popo::ApplicationPortData*, MAX_PROCESS_NUMBER> getApplicationPortDataList() noexcept;
+    cxx::vector<runtime::RunnableData*, MAX_RUNNABLE_NUMBER> getRunnableDataList() noexcept;
 
     /// @deprecated #25
     virtual cxx::expected<SenderPortType::MemberType_t*, PortPoolError>
@@ -103,11 +104,11 @@ class PortPool
     cxx::expected<popo::ConditionVariableData*, PortPoolError> addConditionVariableData() noexcept;
 
     /// @deprecated #25
-    virtual void removeSenderPort(const SenderPortType::MemberType_t& portData) noexcept = 0;
+    virtual void removeSenderPort(SenderPortType::MemberType_t* const portData) noexcept = 0;
     /// @deprecated #25
-    virtual void removeReceiverPort(const ReceiverPortType::MemberType_t& portData) noexcept = 0;
-    virtual void removePublisherPort(const PublisherPortRouDiType::MemberType_t& portData) noexcept = 0;
-    virtual void removeSubscriberPort(const SubscriberPortProducerType::MemberType_t& portData) noexcept = 0;
+    virtual void removeReceiverPort(ReceiverPortType::MemberType_t* const portData) noexcept = 0;
+    virtual void removePublisherPort(PublisherPortRouDiType::MemberType_t* const portData) noexcept = 0;
+    virtual void removeSubscriberPort(SubscriberPortProducerType::MemberType_t* const portData) noexcept = 0;
     void removeInterfacePort(popo::InterfacePortData* const portData) noexcept;
     void removeApplicationPort(popo::ApplicationPortData* const portData) noexcept;
     void removeRunnableData(runtime::RunnableData* const runnableData) noexcept;
@@ -116,6 +117,10 @@ class PortPool
     std::atomic<uint64_t>* serviceRegistryChangeCounter() noexcept;
 
   private:
+    template <typename T, uint64_t VectorCapacity>
+    typename cxx::vector<T*, VectorCapacity>
+    getVectorOfPointerFromList(typename cxx::list<T, VectorCapacity>& rhsList) noexcept;
+
     PortPoolDataBase* m_portPoolDataBase;
 };
 

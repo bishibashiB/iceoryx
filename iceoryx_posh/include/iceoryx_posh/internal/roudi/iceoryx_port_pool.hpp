@@ -31,9 +31,9 @@ class IceOryxPortPool : public PortPool
     IceOryxPortPool(PortPoolData& portPool) noexcept;
 
     /// @deprecated #25
-    cxx::list<SenderPortType::MemberType_t, MAX_PUBLISHERS>& senderPortDataList() noexcept override;
+    cxx::vector<SenderPortType::MemberType_t*, MAX_PUBLISHERS> senderPortDataList() noexcept override;
     /// @deprecated #25
-    cxx::list<ReceiverPortType::MemberType_t, MAX_SUBSCRIBERS>& receiverPortDataList() noexcept override;
+    cxx::vector<ReceiverPortType::MemberType_t*, MAX_SUBSCRIBERS> receiverPortDataList() noexcept override;
 
     /// @deprecated #25
     cxx::expected<SenderPortType::MemberType_t*, PortPoolError>
@@ -49,12 +49,13 @@ class IceOryxPortPool : public PortPool
                     const mepoo::MemoryInfo& memoryInfo = mepoo::MemoryInfo()) noexcept override;
 
     /// @deprecated #25
-    void removeSenderPort(const SenderPortType::MemberType_t& portData) noexcept override;
+    void removeSenderPort(SenderPortType::MemberType_t* const portData) noexcept override;
     /// @deprecated #25
-    void removeReceiverPort(const ReceiverPortType::MemberType_t& portData) noexcept override;
+    void removeReceiverPort(ReceiverPortType::MemberType_t* const portData) noexcept override;
 
-    cxx::list<PublisherPortRouDiType::MemberType_t, MAX_PUBLISHERS>& getPublisherPortDataList() noexcept override;
-    cxx::list<SubscriberPortProducerType::MemberType_t, MAX_SUBSCRIBERS>& getSubscriberPortDataList() noexcept override;
+    cxx::vector<PublisherPortRouDiType::MemberType_t*, MAX_PUBLISHERS> getPublisherPortDataList() noexcept override;
+    cxx::vector<SubscriberPortProducerType::MemberType_t*, MAX_SUBSCRIBERS>
+    getSubscriberPortDataList() noexcept override;
 
     cxx::expected<PublisherPortRouDiType::MemberType_t*, PortPoolError>
     addPublisherPort(const capro::ServiceDescription& serviceDescription,
@@ -69,10 +70,14 @@ class IceOryxPortPool : public PortPool
                       const ProcessName_t& applicationName,
                       const mepoo::MemoryInfo& memoryInfo = mepoo::MemoryInfo()) noexcept override;
 
-    void removePublisherPort(const PublisherPortRouDiType::MemberType_t& portData) noexcept override;
-    void removeSubscriberPort(const SubscriberPortProducerType::MemberType_t& portData) noexcept override;
+    void removePublisherPort(PublisherPortRouDiType::MemberType_t* const portData) noexcept override;
+    void removeSubscriberPort(SubscriberPortProducerType::MemberType_t* const portData) noexcept override;
+
 
   private:
+    template <typename T, uint64_t VectorCapacity>
+    typename cxx::vector<T*, VectorCapacity> getVectorOfPointerFromList(cxx::list<T, VectorCapacity>& rhsList) noexcept;
+
     PortPoolData* m_portPoolData;
 };
 

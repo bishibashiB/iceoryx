@@ -67,7 +67,7 @@ class ReceiverHandler : public LockingPolicy
         ReceiverList_t& getReceiverList() noexcept;
 
       private:
-        AppContext(ReceiverHandler_t& f_receiverHandler);
+        AppContext(ReceiverHandler_t& receiverHandler);
 
         ReceiverHandler_t& m_receiverHandler;
     };
@@ -77,12 +77,12 @@ class ReceiverHandler : public LockingPolicy
         friend ReceiverHandler_t;
 
       public:
-        bool addNewReceiver(ReceiverPortType::MemberType_t* const f_receiver);
-        void removeReceiver(ReceiverPortType::MemberType_t* const f_receiver);
+        bool addNewReceiver(ReceiverPortType::MemberType_t* const receiver);
+        void removeReceiver(ReceiverPortType::MemberType_t* const receiver);
         void removeAll();
 
       private:
-        RouDiContext(ReceiverHandler_t& f_receiverHandler);
+        RouDiContext(ReceiverHandler_t& receiverHandler);
 
         ReceiverHandler_t& m_receiverHandler;
     };
@@ -106,8 +106,8 @@ class ReceiverHandler : public LockingPolicy
     /// @return true if there is a valid sample for delivering on subscription
     bool hasLastChunk();
     bool hasReceivers();
-    bool addNewReceiver(ReceiverPortType::MemberType_t* const f_receiver);
-    void removeReceiver(ReceiverPortType::MemberType_t* const f_receiver);
+    bool addNewReceiver(ReceiverPortType::MemberType_t* const receiver);
+    void removeReceiver(ReceiverPortType::MemberType_t* const receiver);
     void removeAll();
     void enableDoDeliverOnSubscription();
     /// checks if delivering on subscription in enabled

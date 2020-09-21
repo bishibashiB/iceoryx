@@ -26,15 +26,15 @@ IceOryxPortPool::IceOryxPortPool(PortPoolData& portPoolData) noexcept
 }
 
 /// @deprecated #25
-cxx::list<SenderPortType::MemberType_t, MAX_PUBLISHERS>& IceOryxPortPool::senderPortDataList() noexcept
+cxx::vector<SenderPortType::MemberType_t*, MAX_PUBLISHERS> IceOryxPortPool::senderPortDataList() noexcept
 {
-    return m_portPoolData->m_senderPortMembers;
+    return getVectorOfPointerFromList(m_portPoolData->m_senderPortMembers);
 }
 
 /// @deprecated #25
-cxx::list<ReceiverPortType::MemberType_t, MAX_SUBSCRIBERS>& IceOryxPortPool::receiverPortDataList() noexcept
+cxx::vector<ReceiverPortType::MemberType_t*, MAX_SUBSCRIBERS> IceOryxPortPool::receiverPortDataList() noexcept
 {
-    return m_portPoolData->m_receiverPortMembers;
+    return getVectorOfPointerFromList(m_portPoolData->m_receiverPortMembers);
 }
 
 /// @deprecated #25
@@ -77,28 +77,28 @@ IceOryxPortPool::addReceiverPort(const capro::ServiceDescription& serviceDescrip
 }
 
 /// @deprecated #25
-void IceOryxPortPool::removeSenderPort(const SenderPortType::MemberType_t& portData) noexcept
+void IceOryxPortPool::removeSenderPort(SenderPortType::MemberType_t* const portDataPtr) noexcept
 {
     m_portPoolData->m_senderPortMembers.remove_if(
-        [&](SenderPortType::MemberType_t& port) { return &port == &portData; });
+        [portDataPtr](SenderPortType::MemberType_t& port) { return &port == portDataPtr; });
 }
 
 /// @deprecated #25
-void IceOryxPortPool::removeReceiverPort(const ReceiverPortType::MemberType_t& portData) noexcept
+void IceOryxPortPool::removeReceiverPort(ReceiverPortType::MemberType_t* const portDataPtr) noexcept
 {
     m_portPoolData->m_receiverPortMembers.remove_if(
-        [&](ReceiverPortType::MemberType_t& port) { return &port == &portData; });
+        [portDataPtr](ReceiverPortType::MemberType_t& port) { return &port == portDataPtr; });
 }
 
-cxx::list<PublisherPortRouDiType::MemberType_t, MAX_PUBLISHERS>& IceOryxPortPool::getPublisherPortDataList() noexcept
+cxx::vector<PublisherPortRouDiType::MemberType_t*, MAX_PUBLISHERS> IceOryxPortPool::getPublisherPortDataList() noexcept
 {
-    return m_portPoolData->m_publisherPortMembers;
+    return getVectorOfPointerFromList(m_portPoolData->m_publisherPortMembers);
 }
 
-cxx::list<SubscriberPortProducerType::MemberType_t, MAX_SUBSCRIBERS>&
+cxx::vector<SubscriberPortProducerType::MemberType_t*, MAX_SUBSCRIBERS>
 IceOryxPortPool::getSubscriberPortDataList() noexcept
 {
-    return m_portPoolData->m_subscriberPortMembers;
+    return getVectorOfPointerFromList(m_portPoolData->m_subscriberPortMembers);
 }
 
 cxx::expected<PublisherPortRouDiType::MemberType_t*, PortPoolError>
@@ -110,9 +110,9 @@ IceOryxPortPool::addPublisherPort(const capro::ServiceDescription& serviceDescri
 {
     if (!m_portPoolData->m_publisherPortMembers.full())
     {
-        auto& publisherPortData = m_portPoolData->m_publisherPortMembers.emplace_front(
+        auto publisherPortData = &m_portPoolData->m_publisherPortMembers.emplace_back(
             serviceDescription, applicationName, memoryManager, historyCapacity, memoryInfo);
-        return cxx::success<PublisherPortRouDiType::MemberType_t*>(&publisherPortData);
+        return cxx::success<PublisherPortRouDiType::MemberType_t*>(publisherPortData);
     }
     else
     {
@@ -135,9 +135,9 @@ IceOryxPortPool::addSubscriberPort(const capro::ServiceDescription& serviceDescr
         auto queueType = cxx::VariantQueueTypes::SoFi_MultiProducerSingleConsumer;
 #endif
 
-        auto& subscriberPortData = m_portPoolData->m_subscriberPortMembers.emplace_front(
+        auto subscriberPortData = &m_portPoolData->m_subscriberPortMembers.emplace_back(
             serviceDescription, applicationName, queueType, historyRequest, memoryInfo);
-        return cxx::success<SubscriberPortProducerType::MemberType_t*>(&subscriberPortData);
+        return cxx::success<SubscriberPortProducerType::MemberType_t*>(subscriberPortData);
     }
     else
     {
@@ -146,19 +146,32 @@ IceOryxPortPool::addSubscriberPort(const capro::ServiceDescription& serviceDescr
     }
 }
 
-void IceOryxPortPool::removePublisherPort(const PublisherPortRouDiType::MemberType_t& portData) noexcept
+void IceOryxPortPool::removePublisherPort(PublisherPortRouDiType::MemberType_t* const portDataPtr) noexcept
 {
-    m_portPoolData->m_publisherPortMembers.remove_if([&](iox::popo::PublisherPortData& port) {
-        return reinterpret_cast<void*>(&port) == reinterpret_cast<const void*>(&portData);
+    m_portPoolData->m_publisherPortMembers.remove_if([portDataPtr](iox::popo::PublisherPortData& port) {
+        return reinterpret_cast<void*>(&port) == reinterpret_cast<const void*>(portDataPtr);
     });
 }
 
-void IceOryxPortPool::removeSubscriberPort(const SubscriberPortProducerType::MemberType_t& portData) noexcept
+void IceOryxPortPool::removeSubscriberPort(SubscriberPortProducerType::MemberType_t* const portDataPtr) noexcept
 {
-    m_portPoolData->m_subscriberPortMembers.remove_if([&](iox::popo::SubscriberPortData& port) {
-        return reinterpret_cast<void*>(&port) == reinterpret_cast<const void*>(&portData);
+    m_portPoolData->m_subscriberPortMembers.remove_if([portDataPtr](iox::popo::SubscriberPortData& port) {
+        return reinterpret_cast<void*>(&port) == reinterpret_cast<const void*>(portDataPtr);
     });
 }
+
+template <typename T, uint64_t VectorCapacity>
+typename cxx::vector<T*, VectorCapacity>
+IceOryxPortPool::getVectorOfPointerFromList(cxx::list<T, VectorCapacity>& rhsList) noexcept
+{
+    cxx::vector<T*, VectorCapacity> portVector;
+    for (auto& port : rhsList)
+    {
+        portVector.emplace_back(&port);
+    }
+    return portVector;
+}
+
 
 } // namespace roudi
 } // namespace iox

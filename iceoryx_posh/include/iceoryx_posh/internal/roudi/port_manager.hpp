@@ -104,14 +104,14 @@ class PortManager
     void deletePortsOfProcess(const ProcessName_t& processName) noexcept;
 
     /// @deprecated #25
-    void destroySenderPort(SenderPortType::MemberType_t& senderPortData);
+    void destroySenderPort(SenderPortType::MemberType_t* const senderPortData);
 
     /// @deprecated #25
-    void destroyReceiverPort(ReceiverPortType::MemberType_t& receiverPortData);
+    void destroyReceiverPort(ReceiverPortType::MemberType_t* const receiverPortData);
 
-    void destroyPublisherPort(PublisherPortRouDiType::MemberType_t& publisherPortData) noexcept;
+    void destroyPublisherPort(PublisherPortRouDiType::MemberType_t* const publisherPortData) noexcept;
 
-    void destroySubscriberPort(SubscriberPortProducerType::MemberType_t& subscriberPortData) noexcept;
+    void destroySubscriberPort(SubscriberPortProducerType::MemberType_t* const subscriberPortData) noexcept;
 
     const std::atomic<uint64_t>* serviceRegistryChangeCounter() noexcept;
     runtime::MqMessage findService(const capro::ServiceDescription& service) noexcept;

@@ -25,19 +25,19 @@ PortPool::PortPool(PortPoolDataBase& portPoolDataBase) noexcept
 {
 }
 
-cxx::list<popo::InterfacePortData, MAX_INTERFACE_NUMBER>& PortPool::getInterfacePortDataList() noexcept
+cxx::vector<popo::InterfacePortData*, MAX_INTERFACE_NUMBER> PortPool::getInterfacePortDataList() noexcept
 {
-    return m_portPoolDataBase->m_interfacePortMembers;
+    return getVectorOfPointerFromList(m_portPoolDataBase->m_interfacePortMembers);
 }
 
-cxx::list<popo::ApplicationPortData, MAX_PROCESS_NUMBER>& PortPool::getApplicationPortDataList() noexcept
+cxx::vector<popo::ApplicationPortData*, MAX_PROCESS_NUMBER> PortPool::getApplicationPortDataList() noexcept
 {
-    return m_portPoolDataBase->m_applicationPortMembers;
+    return getVectorOfPointerFromList(m_portPoolDataBase->m_applicationPortMembers);
 }
 
-cxx::list<runtime::RunnableData, MAX_RUNNABLE_NUMBER>& PortPool::getRunnableDataList() noexcept
+cxx::vector<runtime::RunnableData*, MAX_RUNNABLE_NUMBER> PortPool::getRunnableDataList() noexcept
 {
-    return m_portPoolDataBase->m_runnableMembers;
+    return getVectorOfPointerFromList(m_portPoolDataBase->m_runnableMembers);
 }
 
 cxx::expected<popo::InterfacePortData*, PortPoolError>
@@ -45,7 +45,7 @@ PortPool::addInterfacePort(const std::string& applicationName, const capro::Inte
 {
     if (!m_portPoolDataBase->m_interfacePortMembers.full())
     {
-        auto interfacePortData = &m_portPoolDataBase->m_interfacePortMembers.emplace_front(
+        auto interfacePortData = &m_portPoolDataBase->m_interfacePortMembers.emplace_back(
             iox::cxx::string<100>(iox::cxx::TruncateToCapacity, applicationName), interface);
         return cxx::success<popo::InterfacePortData*>(interfacePortData);
     }
@@ -61,7 +61,7 @@ PortPool::addApplicationPort(const std::string& applicationName) noexcept
 {
     if (!m_portPoolDataBase->m_applicationPortMembers.full())
     {
-        auto applicationPortData = &m_portPoolDataBase->m_applicationPortMembers.emplace_front(
+        auto applicationPortData = &m_portPoolDataBase->m_applicationPortMembers.emplace_back(
             iox::cxx::string<100>(iox::cxx::TruncateToCapacity, applicationName));
         return cxx::success<popo::ApplicationPortData*>(applicationPortData);
     }
@@ -78,7 +78,7 @@ cxx::expected<runtime::RunnableData*, PortPoolError> PortPool::addRunnableData(
     if (!m_portPoolDataBase->m_runnableMembers.full())
     {
         auto runnableData =
-            &m_portPoolDataBase->m_runnableMembers.emplace_front(process, runnable, runnableDeviceIdentifier);
+            &m_portPoolDataBase->m_runnableMembers.emplace_back(process, runnable, runnableDeviceIdentifier);
         return cxx::success<runtime::RunnableData*>(runnableData);
     }
     else
@@ -92,8 +92,8 @@ cxx::expected<popo::ConditionVariableData*, PortPoolError> PortPool::addConditio
 {
     if (!m_portPoolDataBase->m_conditionVariableMembers.full())
     {
-        auto& conditionVariableData = m_portPoolDataBase->m_conditionVariableMembers.emplace_front();
-        return cxx::success<popo::ConditionVariableData*>(&conditionVariableData);
+        auto conditionVariableData = &m_portPoolDataBase->m_conditionVariableMembers.emplace_back();
+        return cxx::success<popo::ConditionVariableData*>(conditionVariableData);
     }
     else
     {
@@ -102,27 +102,39 @@ cxx::expected<popo::ConditionVariableData*, PortPoolError> PortPool::addConditio
     }
 }
 
-void PortPool::removeInterfacePort(popo::InterfacePortData* const portData) noexcept
+void PortPool::removeInterfacePort(popo::InterfacePortData* const portDataPtr) noexcept
 {
     m_portPoolDataBase->m_interfacePortMembers.remove_if(
-        [portData](popo::InterfacePortData& port) { return &port == portData; });
+        [portDataPtr](popo::InterfacePortData& port) { return &port == portDataPtr; });
 }
 
-void PortPool::removeApplicationPort(popo::ApplicationPortData* const portData) noexcept
+void PortPool::removeApplicationPort(popo::ApplicationPortData* const portDataPtr) noexcept
 {
     m_portPoolDataBase->m_applicationPortMembers.remove_if(
-        [portData](popo::ApplicationPortData& port) { return &port == portData; });
+        [portDataPtr](popo::ApplicationPortData& port) { return &port == portDataPtr; });
 }
 
-void PortPool::removeRunnableData(runtime::RunnableData* const runnableData) noexcept
+void PortPool::removeRunnableData(runtime::RunnableData* const runnableDataPtr) noexcept
 {
     m_portPoolDataBase->m_runnableMembers.remove_if(
-        [runnableData](runtime::RunnableData& r) { return &r == runnableData; });
+        [runnableDataPtr](runtime::RunnableData& r) { return &r == runnableDataPtr; });
 }
 
 std::atomic<uint64_t>* PortPool::serviceRegistryChangeCounter() noexcept
 {
     return &m_portPoolDataBase->m_serviceRegistryChangeCounter;
+}
+
+template <typename T, uint64_t VectorCapacity>
+typename cxx::vector<T*, VectorCapacity>
+PortPool::getVectorOfPointerFromList(cxx::list<T, VectorCapacity>& rhsList) noexcept
+{
+    cxx::vector<T*, VectorCapacity> portVector;
+    for (auto& port : rhsList)
+    {
+        portVector.emplace_back(&port);
+    }
+    return portVector;
 }
 
 } // namespace roudi

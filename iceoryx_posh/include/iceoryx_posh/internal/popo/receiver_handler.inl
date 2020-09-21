@@ -19,8 +19,8 @@ namespace iox
 namespace popo
 {
 template <uint32_t MaxReceivers, typename LockingPolicy>
-inline ReceiverHandler<MaxReceivers, LockingPolicy>::AppContext::AppContext(ReceiverHandler_t& f_receiverHandler)
-    : m_receiverHandler(f_receiverHandler)
+inline ReceiverHandler<MaxReceivers, LockingPolicy>::AppContext::AppContext(ReceiverHandler_t& receiverHandler)
+    : m_receiverHandler(receiverHandler)
 {
 }
 
@@ -63,23 +63,23 @@ ReceiverHandler<MaxReceivers, LockingPolicy>::AppContext::getReceiverList() noex
 }
 
 template <uint32_t MaxReceivers, typename LockingPolicy>
-inline ReceiverHandler<MaxReceivers, LockingPolicy>::RouDiContext::RouDiContext(ReceiverHandler_t& f_receiverHandler)
-    : m_receiverHandler(f_receiverHandler)
+inline ReceiverHandler<MaxReceivers, LockingPolicy>::RouDiContext::RouDiContext(ReceiverHandler_t& receiverHandler)
+    : m_receiverHandler(receiverHandler)
 {
 }
 
 template <uint32_t MaxReceivers, typename LockingPolicy>
 inline bool ReceiverHandler<MaxReceivers, LockingPolicy>::RouDiContext::addNewReceiver(
-    ReceiverPortType::MemberType_t* const f_receiver)
+    ReceiverPortType::MemberType_t* const receiver)
 {
-    return m_receiverHandler.addNewReceiver(f_receiver);
+    return m_receiverHandler.addNewReceiver(receiver);
 }
 
 template <uint32_t MaxReceivers, typename LockingPolicy>
 inline void ReceiverHandler<MaxReceivers, LockingPolicy>::RouDiContext::removeReceiver(
-    ReceiverPortType::MemberType_t* const f_receiver)
+    ReceiverPortType::MemberType_t* const receiver)
 {
-    m_receiverHandler.removeReceiver(f_receiver);
+    m_receiverHandler.removeReceiver(receiver);
 }
 
 template <uint32_t MaxReceivers, typename LockingPolicy>
@@ -114,13 +114,12 @@ inline bool ReceiverHandler<MaxReceivers, LockingPolicy>::hasReceivers()
 }
 
 template <uint32_t MaxReceivers, typename LockingPolicy>
-inline bool
-ReceiverHandler<MaxReceivers, LockingPolicy>::addNewReceiver(ReceiverPortType::MemberType_t* const f_receiver)
+inline bool ReceiverHandler<MaxReceivers, LockingPolicy>::addNewReceiver(ReceiverPortType::MemberType_t* const receiver)
 {
     lockGuard_t lock(*this);
     auto l_alreadyKnownReceiver =
-        std::find_if(m_receiverList.begin(), m_receiverList.end(), [&](ReceiverPortType::MemberType_t* receiver) {
-            return receiver == f_receiver;
+        std::find_if(m_receiverList.begin(), m_receiverList.end(), [&](ReceiverPortType::MemberType_t* receiverInList) {
+            return receiverInList == receiver;
         });
 
     // check if the receiver port is not yet subscribed
@@ -128,13 +127,13 @@ ReceiverHandler<MaxReceivers, LockingPolicy>::addNewReceiver(ReceiverPortType::M
     {
         if (m_receiverList.size() < m_receiverList.capacity())
         {
-            m_receiverList.push_back(f_receiver);
+            m_receiverList.push_back(receiver);
 
             if (m_doDeliverOnSubscription.load(std::memory_order_relaxed))
             {
                 if (m_lastChunk != nullptr)
                 {
-                    ReceiverPortType(f_receiver).deliver(m_lastChunk);
+                    ReceiverPortType(receiver).deliver(m_lastChunk);
                 }
                 else
                 {
@@ -154,11 +153,10 @@ ReceiverHandler<MaxReceivers, LockingPolicy>::addNewReceiver(ReceiverPortType::M
 }
 
 template <uint32_t MaxReceivers, typename LockingPolicy>
-inline void
-ReceiverHandler<MaxReceivers, LockingPolicy>::removeReceiver(ReceiverPortType::MemberType_t* const f_receiver)
+inline void ReceiverHandler<MaxReceivers, LockingPolicy>::removeReceiver(ReceiverPortType::MemberType_t* const receiver)
 {
     lockGuard_t lock(*this);
-    auto l_iter = std::find(m_receiverList.begin(), m_receiverList.end(), f_receiver);
+    auto l_iter = std::find(m_receiverList.begin(), m_receiverList.end(), receiver);
     if (l_iter != m_receiverList.end())
     {
         m_receiverList.erase(l_iter);
