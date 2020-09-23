@@ -18,7 +18,7 @@
 
 COMPONENTS="utils posh"
 BASE_DIR=$PWD
-GBM_FILTER="*"
+GBM_FILTER=""
 
 # check if this script is sourced by another script,
 # if yes then exit properly, so the other script can use this
@@ -45,7 +45,7 @@ for COMPONENT in $COMPONENTS; do
     cd $BASE_DIR/$COMPONENT/test
 
     # Runs only tests available for the given component (--benchmark_out_format={json|console|csv})
-    [ -f ./"$COMPONENT"_moduletests ] && ./"$COMPONENT"_benchmarks --benchmark_filter="${GBM_FILTER}" --benchmark_out="$BM_RESULTS_DIR/"$COMPONENT"_BmResults.json" --benchmark_out_format=json
+    [ -f ./"$COMPONENT"_benchmarks ] && ./"$COMPONENT"_benchmarks --benchmark_filter="$GBM_FILTER" --benchmark_out="$BM_RESULTS_DIR"/"$COMPONENT"_BmResults.json --benchmark_out_format=json
 
 done
 
