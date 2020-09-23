@@ -6,6 +6,7 @@ find_package(iceoryx_utils_testing REQUIRED)
 
 if(test AND NOT GTest_FOUND)
     find_package(GTest CONFIG REQUIRED)
+    find_package(benchmark REQUIRED)
 endif(test AND NOT GTest_FOUND)
 
 set(PROJECT_PREFIX "posh")
@@ -23,6 +24,7 @@ set(TEST_LINK_LIBS
     ${CODE_COVERAGE_LIBS}
     GTest::gtest
     GTest::gmock
+    benchmark::benchmark
     iceoryx_utils::iceoryx_utils
     iceoryx_utils::iceoryx_platform
     iceoryx_utils_testing::iceoryx_utils_testing

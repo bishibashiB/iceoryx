@@ -17,6 +17,7 @@ project(test_binding_c VERSION 0)
 
 find_package(iceoryx_utils_testing REQUIRED)
 find_package(GTest CONFIG REQUIRED)
+find_package(benchmark REQUIRED)
 
 set(PROJECT_PREFIX "binding_c")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_PREFIX}/test)
@@ -27,6 +28,7 @@ set(TEST_LINK_LIBS
     ${CODE_COVERAGE_LIBS}
     GTest::gtest
     GTest::gmock
+    benchmark::benchmark
     iceoryx_binding_c::iceoryx_binding_c
     iceoryx_utils::iceoryx_utils
     iceoryx_utils_testing::iceoryx_utils_testing

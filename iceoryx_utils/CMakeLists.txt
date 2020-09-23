@@ -39,6 +39,7 @@ set(${PROJECT_NAME}_DIR ${CMAKE_CURRENT_LIST_DIR}/cmake
 
 if(test AND NOT GTest_FOUND)
     find_package(GTest CONFIG REQUIRED)
+    find_package(benchmark REQUIRED)
 endif(test AND NOT GTest_FOUND)
 
 if(GTest_FOUND) # only GTest_FOUND, just in case someone want's to use iceoryx_utils_testing without also building the tests
@@ -87,6 +88,7 @@ if(GTest_FOUND) # only GTest_FOUND, just in case someone want's to use iceoryx_u
         iceoryx_utils
         GTest::gtest
         GTest::gmock
+        benchmark::benchmark
         ${CMAKE_DL_LIBS}
     )
 

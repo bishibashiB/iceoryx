@@ -217,6 +217,7 @@ then
 cd $BUILD_DIR
 mkdir -p tools
 cp $WORKSPACE/tools/run_all_tests.sh $BUILD_DIR/tools/run_all_tests.sh
+cp $WORKSPACE/tools/run_all_benchmarks.sh $BUILD_DIR/tools/run_all_benchmarks.sh
 
 echo " [i] Running all tests"
 if [ "$DDS_GATEWAY_FLAG" == "ON" ]
@@ -225,6 +226,8 @@ then
 else
     $BUILD_DIR/tools/run_all_tests.sh $GCOV_SCOPE
 fi
+echo " [i] Running benchmarks"
+$BUILD_DIR/tools/run_all_benchmarks.sh
 
 for COMPONENT in $COMPONENTS; do
 

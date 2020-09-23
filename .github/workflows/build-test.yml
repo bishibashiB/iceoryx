@@ -64,6 +64,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/build
           ../tools/run_all_tests.sh
+          ../tools/run_all_benchmarks.sh
 
       - name : Build sources (clang)
         run: |

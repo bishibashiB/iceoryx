@@ -45,6 +45,7 @@ endif(coverage)
 
 if(test)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/googletest ${CMAKE_BINARY_DIR}/dependencies/googletest/prebuild)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/gbenchmark ${CMAKE_BINARY_DIR}/dependencies/gbenchmark/prebuild)
 endif(test)
 
 # ===== Core
