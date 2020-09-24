@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "iceoryx_posh/internal/roudi/iceoryx_port_pool.hpp"
+#include "iceoryx_posh/iceoryx_posh_types.hpp"
 #include "iceoryx_posh/internal/roudi/port_pool_data.hpp"
 
 namespace iox
@@ -95,7 +96,7 @@ cxx::vector<PublisherPortRouDiType::MemberType_t*, MAX_PUBLISHERS> IceOryxPortPo
     return getVectorOfPointerFromList(m_portPoolData->m_publisherPortMembers);
 }
 
-cxx::vector<SubscriberPortProducerType::MemberType_t*, MAX_SUBSCRIBERS>
+cxx::vector<SubscriberPortType::MemberType_t*, MAX_SUBSCRIBERS>
 IceOryxPortPool::getSubscriberPortDataList() noexcept
 {
     return getVectorOfPointerFromList(m_portPoolData->m_subscriberPortMembers);
@@ -121,7 +122,7 @@ IceOryxPortPool::addPublisherPort(const capro::ServiceDescription& serviceDescri
     }
 }
 
-cxx::expected<SubscriberPortProducerType::MemberType_t*, PortPoolError>
+cxx::expected<SubscriberPortType::MemberType_t*, PortPoolError>
 IceOryxPortPool::addSubscriberPort(const capro::ServiceDescription& serviceDescription,
                                    const uint64_t& historyRequest,
                                    const ProcessName_t& applicationName,
@@ -129,15 +130,9 @@ IceOryxPortPool::addSubscriberPort(const capro::ServiceDescription& serviceDescr
 {
     if (!m_portPoolData->m_subscriberPortMembers.full())
     {
-#if defined(RESTRICT_TO_1_TO_N_COMMUNICATION)
-        auto queueType = cxx::VariantQueueTypes::SoFi_SingleProducerSingleConsumer;
-#else
-        auto queueType = cxx::VariantQueueTypes::SoFi_MultiProducerSingleConsumer;
-#endif
-
         auto subscriberPortData = &m_portPoolData->m_subscriberPortMembers.emplace_back(
-            serviceDescription, applicationName, queueType, historyRequest, memoryInfo);
-        return cxx::success<SubscriberPortProducerType::MemberType_t*>(subscriberPortData);
+            serviceDescription, applicationName, SUBSCRIBER_PORT_QUEUE_TYPE, historyRequest, memoryInfo);
+        return cxx::success<SubscriberPortType::MemberType_t*>(subscriberPortData);
     }
     else
     {
