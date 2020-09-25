@@ -17,10 +17,10 @@
 #include "iceoryx_utils/cxx/list.hpp"
 #include "iceoryx_utils/cxx/vector.hpp"
 
-#define ListSizeInTest (32U * 1024U)
+#define ListSizeInTest (1024U)
 #define TEST_LIST_ELEMENT_DEFAULT_VALUE (-99L)
 
-class ContainterFixture : public benchmark::Fixture
+class ContainerFixture : public benchmark::Fixture
 {
   public:
     static uint64_t cTor;
@@ -121,25 +121,25 @@ class ContainterFixture : public benchmark::Fixture
 
 void FreeSetUp()
 {
-    ContainterFixture::cTor = 0U;
-    ContainterFixture::customCTor = 0U;
-    ContainterFixture::copyCTor = 0U;
-    ContainterFixture::moveCTor = 0U;
-    ContainterFixture::moveAssignment = 0U;
-    ContainterFixture::copyAssignment = 0U;
-    ContainterFixture::dTor = 0U;
-    ContainterFixture::classValue = 0L;
+    ContainerFixture::cTor = 0U;
+    ContainerFixture::customCTor = 0U;
+    ContainerFixture::copyCTor = 0U;
+    ContainerFixture::moveCTor = 0U;
+    ContainerFixture::moveAssignment = 0U;
+    ContainerFixture::copyAssignment = 0U;
+    ContainerFixture::dTor = 0U;
+    ContainerFixture::classValue = 0L;
 }
 
-// ContainterFixture statics
-uint64_t ContainterFixture::cTor;
-uint64_t ContainterFixture::customCTor;
-uint64_t ContainterFixture::copyCTor;
-uint64_t ContainterFixture::moveCTor;
-uint64_t ContainterFixture::moveAssignment;
-uint64_t ContainterFixture::copyAssignment;
-uint64_t ContainterFixture::dTor;
-int64_t ContainterFixture::classValue;
+// ContainerFixture statics
+uint64_t ContainerFixture::cTor;
+uint64_t ContainerFixture::customCTor;
+uint64_t ContainerFixture::copyCTor;
+uint64_t ContainerFixture::moveCTor;
+uint64_t ContainerFixture::moveAssignment;
+uint64_t ContainerFixture::copyAssignment;
+uint64_t ContainerFixture::dTor;
+int64_t ContainerFixture::classValue;
 
 template <typename ContainerType>
 void fillContainer(ContainerType& c, uint64_t fillCnt)
@@ -183,23 +183,20 @@ void readAndCopyPointerOfContainerElem(ContainerTypeFrom& frC, ContainerTypeTo& 
 template <typename ContainerTypeFrom, typename ContainerTypeTo>
 static void BM_typedListRead(benchmark::State& st)
 {
+    ContainerTypeTo v;
+    ContainerTypeFrom testContainer;
+    fillContainer<ContainerTypeFrom>(testContainer, st.range(0));
     for (auto _ : st)
     {
-        st.PauseTiming();
-        ContainerTypeTo v;
-        ContainerTypeFrom testContainer;
-        fillContainer<ContainerTypeFrom>(testContainer, st.range(0));
-        st.ResumeTiming();
-
         readAndCopyPointerOfContainerElem(testContainer, v);
     }
 }
 BENCHMARK_TEMPLATE(BM_typedListRead, iox::cxx::vector<int, ListSizeInTest>, iox::cxx::vector<int*, ListSizeInTest>)
     ->Arg(ListSizeInTest);
-BENCHMARK_TEMPLATE(BM_typedListRead,
-                   iox::cxx::vector<ContainterFixture::TestListElement, ListSizeInTest>,
-                   iox::cxx::vector<ContainterFixture::TestListElement*, ListSizeInTest>)
-    ->Arg(ListSizeInTest);
+// BENCHMARK_TEMPLATE(BM_typedListRead,
+//                    iox::cxx::vector<ContainerFixture::TestListElement, ListSizeInTest>,
+//                    iox::cxx::vector<ContainerFixture::TestListElement*, ListSizeInTest>)
+//     ->Arg(ListSizeInTest);
 BENCHMARK_TEMPLATE(BM_typedListRead, iox::cxx::list<int, ListSizeInTest>, iox::cxx::vector<int*, ListSizeInTest>)
     ->Arg(ListSizeInTest);
 
@@ -207,18 +204,15 @@ BENCHMARK_TEMPLATE(BM_typedListRead, iox::cxx::list<int, ListSizeInTest>, iox::c
 template <typename ContainerType>
 static void BM_typedListIncr(benchmark::State& st)
 {
+    ContainerType testContainer;
+    fillContainer<ContainerType>(testContainer, st.range(0));
     for (auto _ : st)
     {
-        st.PauseTiming();
-        ContainerType testContainer;
-        fillContainer<ContainerType>(testContainer, st.range(0));
-        st.ResumeTiming();
-
         iterateContainer(testContainer);
     }
 }
 BENCHMARK_TEMPLATE(BM_typedListIncr, iox::cxx::vector<int, ListSizeInTest>)->Arg(ListSizeInTest);
-BENCHMARK_TEMPLATE(BM_typedListIncr, iox::cxx::vector<ContainterFixture::TestListElement, ListSizeInTest>)
+BENCHMARK_TEMPLATE(BM_typedListIncr, iox::cxx::vector<ContainerFixture::TestListElement, ListSizeInTest>)
     ->Arg(ListSizeInTest);
 BENCHMARK_TEMPLATE(BM_typedListIncr, iox::cxx::list<int, ListSizeInTest>)->Arg(ListSizeInTest);
 
@@ -226,32 +220,33 @@ BENCHMARK_TEMPLATE(BM_typedListIncr, iox::cxx::list<int, ListSizeInTest>)->Arg(L
 template <typename ContainerType>
 static void BM_typedListRemove(benchmark::State& st)
 {
+    ContainerType testContainer;
+    fillContainer<ContainerType>(testContainer, st.range(0));
+    testContainer.pop_back();
+
     for (auto _ : st)
     {
         st.PauseTiming();
         FreeSetUp();
-        ContainerType testContainer;
-        fillContainer<ContainerType>(testContainer, st.range(0));
-
+        testContainer.emplace_back(42);
         auto iter = iterateContainer(testContainer, st.range(1));
         st.ResumeTiming();
 
         benchmark::DoNotOptimize(testContainer.erase(iter));
-        // benchmark::DoNotOptimize((*iter));
         benchmark::ClobberMemory();
     }
-    st.counters["customCTor"] = ContainterFixture::customCTor;
-    st.counters["dTor"] = ContainterFixture::dTor;
-    st.counters["copyCTor"] = ContainterFixture::copyCTor;
-    st.counters["moveCTor"] = ContainterFixture::moveCTor;
-    st.counters["copyAssignment"] = ContainterFixture::copyAssignment;
-    st.counters["moveAssignment"] = ContainterFixture::moveAssignment;
+    st.counters["customCTor"] = ContainerFixture::customCTor;
+    st.counters["dTor"] = ContainerFixture::dTor;
+    st.counters["copyCTor"] = ContainerFixture::copyCTor;
+    st.counters["moveCTor"] = ContainerFixture::moveCTor;
+    st.counters["copyAssignment"] = ContainerFixture::copyAssignment;
+    st.counters["moveAssignment"] = ContainerFixture::moveAssignment;
 }
 BENCHMARK_TEMPLATE(BM_typedListRemove, iox::cxx::vector<int, ListSizeInTest>)
     ->Args({ListSizeInTest, 1U})
     ->Args({ListSizeInTest, ListSizeInTest / 2U})
     ->Args({ListSizeInTest, ListSizeInTest - 1U});
-BENCHMARK_TEMPLATE(BM_typedListRemove, iox::cxx::vector<ContainterFixture::TestListElement, ListSizeInTest>)
+BENCHMARK_TEMPLATE(BM_typedListRemove, iox::cxx::vector<ContainerFixture::TestListElement, ListSizeInTest>)
     ->Args({ListSizeInTest, 1U})
     ->Args({ListSizeInTest, ListSizeInTest / 2U})
     ->Args({ListSizeInTest, ListSizeInTest - 1U});
@@ -259,6 +254,9 @@ BENCHMARK_TEMPLATE(BM_typedListRemove, iox::cxx::list<int, ListSizeInTest>)
     ->Args({ListSizeInTest, 1U})
     ->Args({ListSizeInTest, ListSizeInTest / 2U})
     ->Args({ListSizeInTest, ListSizeInTest - 1U});
-
+BENCHMARK_TEMPLATE(BM_typedListRemove, iox::cxx::list<ContainerFixture::TestListElement, ListSizeInTest>)
+    ->Args({ListSizeInTest, 1U})
+    ->Args({ListSizeInTest, ListSizeInTest / 2U})
+    ->Args({ListSizeInTest, ListSizeInTest - 1U});
 
 BENCHMARK_MAIN();
