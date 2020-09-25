@@ -19,8 +19,117 @@
 #include <list>
 #include <vector>
 
-#define ListSizeInTest 256U
+#define ListSizeInTest 1024U
+#define TEST_LIST_ELEMENT_DEFAULT_VALUE (-99L)
 
+class ContainterFixture : public benchmark::Fixture
+{
+  public:
+    static uint64_t cTor;
+    static uint64_t customCTor;
+    static uint64_t copyCTor;
+    static uint64_t moveCTor;
+    static uint64_t moveAssignment;
+    static uint64_t copyAssignment;
+    static uint64_t dTor;
+    static int64_t classValue;
+
+    class TestListElement
+    {
+      public:
+        TestListElement()
+        {
+            cTor++;
+            classValue = m_value;
+        }
+
+        TestListElement(const int64_t value)
+            : m_value(value)
+        {
+            customCTor++;
+            classValue = m_value;
+        }
+
+        TestListElement(const TestListElement& rhs)
+        {
+            copyCTor++;
+            m_value = rhs.m_value;
+            classValue = m_value;
+        }
+
+        TestListElement(TestListElement&& rhs)
+        {
+            moveCTor++;
+            m_value = rhs.m_value;
+            classValue = m_value;
+        }
+
+        TestListElement& operator=(const TestListElement& rhs)
+        {
+            copyAssignment++;
+            m_value = rhs.m_value;
+            classValue = m_value;
+            return *this;
+        }
+
+        TestListElement& operator=(TestListElement&& rhs)
+        {
+            moveAssignment++;
+            m_value = rhs.m_value;
+            classValue = m_value;
+            return *this;
+        }
+
+        bool operator==(const TestListElement& rhs) const
+        {
+            return rhs.m_value == m_value;
+        }
+
+        ~TestListElement()
+        {
+            dTor++;
+            classValue = m_value;
+        }
+
+        int64_t m_value = TEST_LIST_ELEMENT_DEFAULT_VALUE;
+    };
+
+
+    void SetUp()
+    {
+        cTor = 0U;
+        customCTor = 0U;
+        copyCTor = 0U;
+        moveCTor = 0U;
+        moveAssignment = 0U;
+        copyAssignment = 0U;
+        dTor = 0U;
+        classValue = 0U;
+    }
+
+    bool isSetupState()
+    {
+        if (cTor == 0U && customCTor == 0U && copyCTor == 0U && moveCTor == 0U && moveAssignment == 0U
+            && copyAssignment == 0U && dTor == 0U && classValue == 0U)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+};
+
+// ContainterFixture statics
+uint64_t ContainterFixture::cTor;
+uint64_t ContainterFixture::customCTor;
+uint64_t ContainterFixture::copyCTor;
+uint64_t ContainterFixture::moveCTor;
+uint64_t ContainterFixture::moveAssignment;
+uint64_t ContainterFixture::copyAssignment;
+uint64_t ContainterFixture::dTor;
+int64_t ContainterFixture::classValue;
 
 template <typename ContainerType>
 void fillContainer(ContainerType& c, uint64_t fillCnt)
@@ -35,7 +144,7 @@ template <typename ContainerType>
 void iterateContainer(ContainerType& c)
 {
     auto iter = c.begin();
-    for (uint l = 1; l < c.size(); ++l)
+    for (uint64_t l = 0; l < c.size(); ++l)
     {
         benchmark::DoNotOptimize(++iter);
         benchmark::ClobberMemory();
@@ -69,7 +178,11 @@ static void BM_typedListRead(benchmark::State& st)
 }
 BENCHMARK_TEMPLATE(BM_typedListRead, iox::cxx::vector<int, ListSizeInTest>, iox::cxx::vector<int*, ListSizeInTest>)
     ->Arg(ListSizeInTest);
-BENCHMARK_TEMPLATE(BM_typedListRead, std::list<int>, iox::cxx::vector<int*, ListSizeInTest>)->Arg(ListSizeInTest);
+BENCHMARK_TEMPLATE(BM_typedListRead,
+                   iox::cxx::vector<ContainterFixture::TestListElement, ListSizeInTest>,
+                   iox::cxx::vector<ContainterFixture::TestListElement*, ListSizeInTest>)
+    ->Arg(ListSizeInTest);
+// BENCHMARK_TEMPLATE(BM_typedListRead, std::list<int>, iox::cxx::vector<int*, ListSizeInTest>)->Arg(ListSizeInTest);
 BENCHMARK_TEMPLATE(BM_typedListRead, iox::cxx::list<int, ListSizeInTest>, iox::cxx::vector<int*, ListSizeInTest>)
     ->Arg(ListSizeInTest);
 
@@ -88,7 +201,9 @@ static void BM_typedListIncr(benchmark::State& st)
     }
 }
 BENCHMARK_TEMPLATE(BM_typedListIncr, iox::cxx::vector<int, ListSizeInTest>)->Arg(ListSizeInTest);
-BENCHMARK_TEMPLATE(BM_typedListIncr, std::list<int>)->Arg(ListSizeInTest);
+BENCHMARK_TEMPLATE(BM_typedListIncr, iox::cxx::vector<ContainterFixture::TestListElement, ListSizeInTest>)
+    ->Arg(ListSizeInTest);
+// BENCHMARK_TEMPLATE(BM_typedListIncr, std::list<int>)->Arg(ListSizeInTest);
 BENCHMARK_TEMPLATE(BM_typedListIncr, iox::cxx::list<int, ListSizeInTest>)->Arg(ListSizeInTest);
 
 
@@ -102,13 +217,14 @@ static void BM_typedListRemove(benchmark::State& st)
         fillContainer<ContainerType>(testContainer, st.range(0));
 
         auto iter = testContainer.begin();
-        for (int64_t k; k < st.range(1); ++k)
+        for (int64_t k = 0; k < st.range(1); ++k)
         {
             ++iter;
         }
         st.ResumeTiming();
 
         benchmark::DoNotOptimize(testContainer.erase(iter));
+        // benchmark::DoNotOptimize((*iter));
         benchmark::ClobberMemory();
     }
 }
@@ -116,14 +232,19 @@ BENCHMARK_TEMPLATE(BM_typedListRemove, iox::cxx::vector<int, ListSizeInTest>)
     ->Args({ListSizeInTest, 1U})
     ->Args({ListSizeInTest, ListSizeInTest / 2U})
     ->Args({ListSizeInTest, ListSizeInTest - 1U});
-BENCHMARK_TEMPLATE(BM_typedListRemove, std::list<int>)
+BENCHMARK_TEMPLATE(BM_typedListRemove, iox::cxx::vector<ContainterFixture::TestListElement, ListSizeInTest>)
     ->Args({ListSizeInTest, 1U})
     ->Args({ListSizeInTest, ListSizeInTest / 2U})
     ->Args({ListSizeInTest, ListSizeInTest - 1U});
+// BENCHMARK_TEMPLATE(BM_typedListRemove, std::list<int>)
+//     ->Args({ListSizeInTest, 1U})
+//     ->Args({ListSizeInTest, ListSizeInTest / 2U})
+//     ->Args({ListSizeInTest, ListSizeInTest - 1U});
 BENCHMARK_TEMPLATE(BM_typedListRemove, iox::cxx::list<int, ListSizeInTest>)
     ->Args({ListSizeInTest, 1U})
     ->Args({ListSizeInTest, ListSizeInTest / 2U})
     ->Args({ListSizeInTest, ListSizeInTest - 1U});
+
 
 template <typename ContainerType>
 static void BM_typedListIterateAndRemove(benchmark::State& st)
@@ -136,13 +257,14 @@ static void BM_typedListIterateAndRemove(benchmark::State& st)
         st.ResumeTiming();
 
         auto iter = testContainer.begin();
-        for (int64_t k; k < st.range(1); ++k)
+        for (int64_t k = 0; k < st.range(1); ++k)
         {
             benchmark::DoNotOptimize(++iter);
             benchmark::ClobberMemory();
         }
 
         benchmark::DoNotOptimize(testContainer.erase(iter));
+        // benchmark::DoNotOptimize((*iter));
         benchmark::ClobberMemory();
     }
 }
@@ -151,10 +273,14 @@ BENCHMARK_TEMPLATE(BM_typedListIterateAndRemove, iox::cxx::vector<int, ListSizeI
     ->Args({ListSizeInTest, 1U})
     ->Args({ListSizeInTest, ListSizeInTest / 2U})
     ->Args({ListSizeInTest, ListSizeInTest - 1U});
-BENCHMARK_TEMPLATE(BM_typedListIterateAndRemove, std::list<int>)
+BENCHMARK_TEMPLATE(BM_typedListIterateAndRemove, iox::cxx::vector<ContainterFixture::TestListElement, ListSizeInTest>)
     ->Args({ListSizeInTest, 1U})
     ->Args({ListSizeInTest, ListSizeInTest / 2U})
     ->Args({ListSizeInTest, ListSizeInTest - 1U});
+// BENCHMARK_TEMPLATE(BM_typedListIterateAndRemove, std::list<int>)
+//     ->Args({ListSizeInTest, 1U})
+//     ->Args({ListSizeInTest, ListSizeInTest / 2U})
+//     ->Args({ListSizeInTest, ListSizeInTest - 1U});
 BENCHMARK_TEMPLATE(BM_typedListIterateAndRemove, iox::cxx::list<int, ListSizeInTest>)
     ->Args({ListSizeInTest, 1U})
     ->Args({ListSizeInTest, ListSizeInTest / 2U})
