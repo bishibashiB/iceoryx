@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//#include "test.hpp"
-#include "../../../build/dependencies/gbenchmark/src/include/benchmark/benchmark.h"
+#include <benchmark/benchmark.h>
+
 #include "iceoryx_utils/cxx/list.hpp"
 #include "iceoryx_utils/cxx/vector.hpp"
 
