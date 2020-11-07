@@ -1,0 +1,37 @@
+# This workflow builds & runs test cases in iceoryx
+
+name: Build gcc9
+
+# Triggers the workflow on push or pull request events but only for the master branch
+on:
+  push:
+    branches: '**'
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This job builds & runs iceoryx tests in ubuntu-18.04
+  build-test-ubuntu:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-18.04
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Install iceoryx dependencies
+        # Softwares installed in ubuntu-18.04 instance 
+        # https://github.com/actions/virtual-environments/blob/master/images/linux/Ubuntu1804-README.md
+        run: sudo apt-get update && sudo apt-get install -y libacl1-dev libncurses5-dev git cmake build-essential lcov gcc-9 g++-9 gcc-10 g++-10
+
+      - name : Checkout
+        uses: actions/checkout@v2
+ 
+      - name: Build, test
+        shell: bash
+        env:
+          CC:   gcc-9
+          CXX:  g++-9
+          #NUM_CORES: `nproc`
+        run: |
+          export NUM_CORES=`nproc`
+          $GITHUB_WORKSPACE/tools/iceoryx_build_test.sh clean strict -j $NUM_CORES
